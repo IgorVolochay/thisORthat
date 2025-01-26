@@ -6,7 +6,7 @@ Telegram mini-app where you have to choose one of two things.
 
 1. Installing the repository:
 ```bash
-git install https://github.com/IgorVolochay/thisORthat
+git clone https://github.com/IgorVolochay/thisORthat
 ```
 
 2. The project is written in Python3.9. Make sure you have it on your system. Go to the project folder, create a virtual environment and download pip requirements:
