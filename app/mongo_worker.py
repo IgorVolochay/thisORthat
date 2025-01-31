@@ -39,7 +39,6 @@ class MongoWorker:
 
 
 if __name__ == "__main__":
-    print(1)
     mongo = MongoWorker()
     mongo.get_mongodb_info()
     print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "path/to/img"))
