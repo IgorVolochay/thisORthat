@@ -2,8 +2,10 @@ import pymongo
 
 from datetime import datetime
 
+from bson import ObjectId
 
-class MongoWorker():
+
+class MongoWorker:
     def __init__(self):
         self.client = pymongo.MongoClient(host="127.0.0.1", port=27017)
         self.db = self.client["data"]
@@ -14,27 +16,26 @@ class MongoWorker():
         print(self.client.list_database_names())
         print(self.db.list_collection_names())
 
-    def find_user(self, user_id:int) -> None:
+    def find_user(self, user_id: int) -> dict:
         result = self.users_data.find_one({"user_id": user_id})
         return result
 
-    def add_user(self, user_id:int, username:str, first_name:str, last_name:str, photo_path:str) -> bool:
+    def add_user(self, user_id: int, username: str, first_name: str, last_name: str, photo_path: str) -> ObjectId:
         try:
-            self.users_data.insert_one({"user_id": user_id,
-                                        "username": username,
-                                        "first_name": first_name,
-                                        "last_name": last_name,
-                                        "photo_path": photo_path,
-                                        "activity": 0,
-                                        "liked_post_ids": [],
-                                        "disliked_post_ids": [],
-                                        "comments_ids": [],
-                                        "registration_date": datetime.now().isoformat()
-                                        })
-            return True
+            res = self.users_data.insert_one({"user_id": user_id,
+                                              "username": username,
+                                              "first_name": first_name,
+                                              "last_name": last_name,
+                                              "photo_path": photo_path,
+                                              "activity": 0,
+                                              "liked_post_ids": [],
+                                              "disliked_post_ids": [],
+                                              "comments_ids": [],
+                                              "registration_date": datetime.now().isoformat()
+                                              })
+            return res.inserted_id
         except Exception as exception:
             print(exception)
-            return False
 
 
 if __name__ == "__main__":
