@@ -3,7 +3,7 @@ name: mypy-test
 on:
   push:
     paths:
-      - '*.py'
+      - 'app/*.py'
 
 jobs:
   mypy:
