@@ -41,6 +41,5 @@ class MongoWorker:
 if __name__ == "__main__":
     mongo = MongoWorker()
     mongo.get_mongodb_info()
-    print("test Github action")
     print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "path/to/img"))
     print(mongo.find_user(123))
