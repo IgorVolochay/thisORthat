@@ -1,0 +1,31 @@
+name: app-actions
+
+on:
+  push:
+    branches:
+      - main
+      - app
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          architecture: x64
+
+      - name: Install dependencies
+        run: |
+          pip install mypy
+          pip install -r requirements.txt
+
+      - name: Run mypy
+        run: mypy --ignore-missing-imports ./app
