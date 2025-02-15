@@ -23,7 +23,7 @@ class MongoWorker:
         print(self.client.list_database_names())
         print(self.db.list_collection_names())
 
-    def check_user(self, user_id: int) -> True | False:
+    def check_user(self, user_id: int) -> bool:
         if self.users_data.find_one({"user_id": user_id}):
             return True
         else:

@@ -10,8 +10,8 @@ class User(BaseModel):
     photo_path: str
 
     activity: int = 0
-    liked_post_ids: list[int] = None
-    disliked_post_ids: list[int] = None
-    comments_ids: list[int] = None
+    liked_post_ids: list[int] = list()
+    disliked_post_ids: list[int] = list()
+    comments_ids: list[int] = list()
 
     registration_date: str
