@@ -2,6 +2,8 @@ name: app-actions
 
 on:
   push:
+    paths:
+      - '**.py'
     branches:
       - main
       - app
