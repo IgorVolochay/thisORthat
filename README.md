@@ -19,5 +19,5 @@ pip3 install -r requirements.txt
 
 3. Installing MongoDB database. You can use the [official manual](https://www.mongodb.com/docs/manual/installation/) to install MongoDB manually, or use a [Docker image](https://hub.docker.com/r/mongodb/mongodb-community-server) to run the container:
 ```bash
-docker run --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server
+docker run --name mongodb -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=user -e MONGO_INITDB_ROOT_PASSWORD=pass mongodb/mongodb-community-server
 ```
