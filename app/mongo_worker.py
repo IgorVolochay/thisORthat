@@ -29,12 +29,12 @@ class MongoWorker:
         else:
             return False
 
-    def add_user(self, user_id: int, username: str, first_name: str, last_name: str, photo_path: str) -> User:
+    def add_user(self, user_id: int, username: str, first_name: str, last_name: str, photo_id: str) -> User:
         new_user = User(user_id=user_id,
                         username=username,
                         first_name=first_name,
                         last_name=last_name,
-                        photo_path=photo_path,
+                        photo_id=photo_id,
                         registration_date=datetime.now().isoformat())
         try:
             res = self.users_data.insert_one(new_user.model_dump())
@@ -51,5 +51,5 @@ if __name__ == "__main__":
     mongo = MongoWorker()
     mongo.get_mongodb_info()
     print(mongo.check_user(123))
-    # print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", os.path.join("/path/to", "photo.jpg")))
+    # print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "photo_0.jpg"))
     print(mongo.get_user(123))
