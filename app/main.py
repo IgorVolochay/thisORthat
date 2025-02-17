@@ -24,13 +24,13 @@ async def get_user(user_id: int,
     return BaseResponse(result=result)
 
 @app.post("/add_user")
-async def add_user(user_id: int,
-                   username: str,
-                   first_name: str,
-                   last_name: str,
-                   photo_url: str,
+async def add_user(new_user: AddUserBody,
                    mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
-    result = mongo.add_user(user_id, username, first_name, last_name, photo_url)
+    result = mongo.add_user(new_user.user_id,
+                            new_user.username,
+                            new_user.first_name,
+                            new_user.last_name,
+                            new_user.photo_url)
     return BaseResponse(result=result)
 
 
