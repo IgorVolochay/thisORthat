@@ -1,6 +1,6 @@
 import typing
 
-from pydantic import BaseModel
+from pydantic import BaseModel, NonNegativeInt
 
 
 class BaseResponse(BaseModel):
@@ -8,7 +8,7 @@ class BaseResponse(BaseModel):
     error: bool = False
 
 class AddUserBody(BaseModel):
-    user_id: int
+    user_id: NonNegativeInt
     username: str
 
     first_name: str
