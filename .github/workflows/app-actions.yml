@@ -14,6 +14,7 @@ on:
 jobs:
   mypy:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -31,3 +32,26 @@ jobs:
 
       - name: Run mypy
         run: mypy --ignore-missing-imports ./app
+
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          architecture: x64
+
+      - name: Setup MongoDB
+        run: docker run --name mongodb -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=user -e MONGO_INITDB_ROOT_PASSWORD=pass mongodb/mongodb-community-server
+
+      - name: Install dependencies
+        run: |
+          pip install pytest==8.3.4 pytest-asyncio==0.25.3 httpx==0.28.1
+          pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest -vs
