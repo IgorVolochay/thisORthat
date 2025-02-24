@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-
+from pydantic import BaseModel, Field
+from bson.objectid import ObjectId
 
 class User(BaseModel):
     user_id: int
@@ -15,3 +15,25 @@ class User(BaseModel):
     comments_ids: list[int] = list()
 
     registration_date: str
+
+class Card(BaseModel):
+    card_id: ObjectId = Field(alias="_id")
+
+    choice_A: str
+    choice_B: str
+
+    count_choice_A: int = 0
+    count_choice_B: int = 0
+    count_total: int = 0
+
+    count_likes: int = 0
+    count_dislikes: int = 0
+    comments: list[int] = list()
+
+    author_id: int
+    creation_date: str
+    moderation_date: str = "Not moderated"
+    active_status: bool = False
+
+    class Config:
+        arbitrary_types_allowed = True
