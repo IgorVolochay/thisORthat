@@ -3,6 +3,7 @@ import asyncio
 
 from schemas.api_schemas import *
 from mongo_worker import MongoWorker
+from base_moderation import moderate_text
 
 from fastapi import FastAPI, Depends, Response, status
 
@@ -40,6 +41,41 @@ async def add_user(new_user: AddUserBody,
     else:
         response.status_code = status.HTTP_409_CONFLICT
         return BaseResponse(result="User already exist", error=True)
+    
+
+@app.get("/get_card", status_code=200)
+async def get_card(card_id: NonNegativeInt,
+                   response: Response,
+                   mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
+    card = mongo.get_card(card_id)
+    if card:
+        return BaseResponse(result=card)
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return BaseResponse(result="There is no card with this card_id", error=True)
+    
+@app.get("/get_random_cards", status_code=200)
+async def get_random_cards(response: Response,
+                           mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
+    result = mongo.get_random_cards(10, True)
+    if result:
+        return BaseResponse(result=result)
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return BaseResponse(result="No active cards", error=True)
+    
+@app.post("/add_card", status_code=201)
+async def add_card(new_card: AddCardBody,
+                   response: Response,
+                   mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
+    if moderate_text(new_card.choice_A) and moderate_text(new_card.choice_B):
+        card = mongo.add_card(new_card.choice_A,
+                              new_card.choice_B,
+                              new_card.author_id)
+        return BaseResponse(result=card)
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return BaseResponse(result="Card has not passed base moderation", error=True)
 
 
 async def main():

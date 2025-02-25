@@ -14,3 +14,9 @@ class AddUserBody(BaseModel):
     first_name: str
     last_name: str
     photo_url: str
+
+class AddCardBody(BaseModel):
+    choice_A: str
+    choice_B: str
+
+    author_id: NonNegativeInt
