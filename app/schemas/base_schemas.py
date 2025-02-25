@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
-from bson.objectid import ObjectId
+import uuid
+
+from pydantic import BaseModel
 
 class User(BaseModel):
     user_id: int
@@ -17,7 +18,7 @@ class User(BaseModel):
     registration_date: str
 
 class Card(BaseModel):
-    card_id: ObjectId = Field(alias="_id", default=ObjectId())
+    card_id: int
 
     choice_A: str
     choice_B: str
@@ -34,6 +35,3 @@ class Card(BaseModel):
     creation_date: str
     moderation_date: str = "Not moderated"
     active_status: bool = False
-
-    class Config:
-        arbitrary_types_allowed = True
