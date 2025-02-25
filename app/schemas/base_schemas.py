@@ -17,7 +17,7 @@ class User(BaseModel):
     registration_date: str
 
 class Card(BaseModel):
-    card_id: ObjectId = Field(alias="_id")
+    card_id: ObjectId = Field(alias="_id", default=ObjectId())
 
     choice_A: str
     choice_B: str
