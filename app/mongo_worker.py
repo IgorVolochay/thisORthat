@@ -67,7 +67,7 @@ class MongoWorker:
                     {"$sample": {"size": amount}}]
         raw_items = list(self.game_data.aggregate(pipeline))
 
-        if raw_items:
+        if not raw_items:
             validated_items = [Card.model_validate(item) for item in raw_items]
             return validated_items
         else:
