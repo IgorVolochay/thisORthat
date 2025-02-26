@@ -16,5 +16,9 @@ def has_no_dirty_words(text: str) -> bool:
     words = set(re.findall(r'\w+', text.lower()))
     return not bool(words & dirty_words_set)
 
+def text_lenght(text: str) -> bool:
+    """Check max text lenght"""
+    return len(text) <= 150 # TODO: update in future
+
 def moderate_text(text: str) -> bool:
-    return is_not_empty(text) and has_no_links(text) and has_no_dirty_words(text)
+    return is_not_empty(text) and has_no_links(text) and has_no_dirty_words(text) and text_lenght(text)
