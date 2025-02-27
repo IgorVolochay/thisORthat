@@ -3,6 +3,7 @@ import os
 import pymongo
 
 from schemas.base_schemas import *
+from schemas.api_schemas import *
 from typing import Optional
 
 from datetime import datetime
@@ -18,9 +19,10 @@ class MongoWorker:
                                           password = os.getenv('MONGO_PASS'),
                                           uuidRepresentation="standard")
         self.db = self.client["data"]
-        self.users_data = self.db["users_data"]
+        self.users_data = self.db["users"]
+        self.visited_data = self.db["visited"]
         self.counters = self.db["counters"]
-        self.game_data = self.db["game_data"]
+        self.game_data = self.db["cards"]
 
 
     def check_user(self, user_id: int) -> bool:
@@ -85,12 +87,59 @@ class MongoWorker:
             return validated_items
         else:
             return None
+        
+
+    def select_choice(self, card_id: int, choice: str) -> BaseResponse:
+        if choice == "A":
+            count_choice = "count_choice_A"
+        elif choice == "B":
+            count_choice = "count_choice_B"
+        else:
+            return BaseResponse(result="Wrong choice", error=True)
+        
+        result = self.game_data.find_one_and_update({"card_id": card_id},
+                                                    {"$inc": {"count_total": 1, count_choice: 1}})
+        
+        if not result:
+            return BaseResponse(result="Card doesn't exist", error=True)
+        else:
+            return BaseResponse(result=result, error=False)
+    
+    def like_card(self, card_id: int, user_id: int) -> BaseResponse:
+        update_card_info = self.game_data.find_one_and_update({"card_id": card_id}, 
+                                                              {"$inc": {"count_likes": 1}})
+        if not update_card_info:
+            return BaseResponse(result="Card doesn't exist", error=True)
+        else:
+            add_card_to_user = self.users_data.update_one({'user_id': user_id},
+                                                          {'$push': {'liked_card_ids': card_id}})
+            if not add_card_to_user:
+                return BaseResponse(result="User doesn't exist", error=True)
+            else:
+                return BaseResponse(result=True, error=False)
+            
+    def dislike_card(self, card_id: int, user_id: int) -> BaseResponse:
+        update_card_info = self.game_data.find_one_and_update({"card_id": card_id}, 
+                                                              {"$inc": {"count_dislikes": 1}})
+        if not update_card_info:
+            return BaseResponse(result="Card doesn't exist", error=True)
+        else:
+            add_card_to_user = self.users_data.update_one({'user_id': user_id},
+                                                          {'$push': {'disliked_card_ids': card_id}})
+            if not add_card_to_user:
+                return BaseResponse(result="User doesn't exist", error=True)
+            else:
+                return BaseResponse(result=True, error=False)
+
 
 if __name__ == "__main__":
     mongo = MongoWorker()
     #print(mongo.check_user(123))
-    #print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "photo_0.jpg"))
+    print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "photo_0.jpg"))
     #print(mongo.get_user(123))
     print(mongo.add_card("A", "B", 123))
     #print(mongo.get_random_cards(10, active_status=False))
     #print(mongo.update_counter("cards_counter"))
+    print(mongo.select_choice(1, "A"))
+    print(mongo.like_card(1, 455412573))
+    print(mongo.dislike_card(1, 455412573))
