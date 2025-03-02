@@ -69,7 +69,7 @@ class MongoWorker:
         else:
             return BaseResponse(result=Visited.model_validate(document))
         
-    def filter_cards(self, random_cards: list[Card], cards_visited: set) -> tuple[list[Optional[Card]], int]:
+    def filter_cards(self, random_cards: list[Card], cards_visited: set) -> tuple[list[Card], list[int]]:
         filtered_cards = [card for card in random_cards if card.card_id not in cards_visited]
         filtered_cards_id = [filtered_card.card_id for filtered_card in filtered_cards]
         
