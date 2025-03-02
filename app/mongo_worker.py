@@ -57,9 +57,12 @@ class MongoWorker:
         return counter["counter"]
     
     
-    def get_visited_cards(self, user_id: int) -> Visited:
+    def get_visited_cards(self, user_id: int) -> Optional[Visited]:
         document = self.visited_data.find_one({"user_id": user_id})
-        return Visited.model_validate(document)
+        if not document:
+            return None
+        else:
+            return Visited.model_validate(document)
     
     def update_visited_cards(self, user_id: int, visited_card_id: int) -> Visited:
         update_visited = self.visited_data.find_one_and_update({"user_id": user_id},
@@ -156,4 +159,4 @@ if __name__ == "__main__":
     #print(mongo.like_card(1, 455412573))
     #print(mongo.dislike_card(1, 455412573))
     print(mongo.update_visited_cards(123, 2))
-    print(mongo.get_visited_cards(123))
+    print(mongo.get_visited_cards(12))
