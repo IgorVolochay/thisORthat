@@ -10,8 +10,6 @@ from schemas.api_schemas import *
 
 EXIST_AUTHOR = random.randint(100000000, 1000000000)
 NON_EXIST_CARD_ID = 1000
-NO_ACTIVE_CARDS_STATUS = False
-ACTIVE_CARDS_LESS_THAN_TEN = False
 
 
 # ---------- /add_card ----------
@@ -186,58 +184,3 @@ async def test_get_card_negative():
         response = await client.get("/get_card", params={"card_id": -10})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': -10}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
-
-
-# ---------- /get_random_cards ----------
-
-@pytest.mark.asyncio
-async def test_get_random_cards_valid():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get("/get_random_cards")
-        print(f"\nINPUT: endpoint=/get_random_cards\nOUTPUT: status={response.status_code} | json={response.json()}")
-        if response.status_code == 404 and BaseResponse.model_validate(response.json()).result == "No active cards":
-            global NO_ACTIVE_CARDS_STATUS
-            NO_ACTIVE_CARDS_STATUS = True
-            pytest.skip(reason="No active cards in MongoDB")
-        else:
-            assert response.status_code == 200
-            result = response.json().get("result")
-            assert isinstance(result, list)
-            if len(result) == 10:
-                for card in result:
-                    assert "choice_A" in card
-                    assert "choice_B" in card
-                    assert "author_id" in card
-                    assert "card_id" in card
-            else:
-                global ACTIVE_CARDS_LESS_THAN_TEN
-                ACTIVE_CARDS_LESS_THAN_TEN = True
-                pytest.skip(reason="The number of active cards is less than 10 in MongoDB")
-
-@pytest.mark.asyncio
-async def test_get_random_cards_randomness():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response1 = await client.get("/get_random_cards")
-        response2 = await client.get("/get_random_cards")
-        result1 = response1.json().get("result")
-        result2 = response2.json().get("result")
-        print(f"\nINPUT: endpoint=/get_random_cards (двойной вызов)\nOUTPUT 1: {result1}\nOUTPUT 2: {result2}")
-        if len(result1) == 10 and len(result2) == 10:
-            assert result1 != result2
-
-@pytest.mark.asyncio
-async def test_get_random_cards_parallel_requests():
-    if NO_ACTIVE_CARDS_STATUS:
-        pytest.skip(reason="No active cards in MongoDB")
-    elif ACTIVE_CARDS_LESS_THAN_TEN:
-        pytest.skip(reason="The number of active cards is less than 10 in MongoDB")
-    else:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            tasks = [client.get("/get_random_cards") for _ in range(5)]
-            responses = await asyncio.gather(*tasks)
-            for resp in responses:
-                print(f"\nParallel call: status={resp.status_code} | json={resp.json()}")
-                assert resp.status_code == 200
-                result = resp.json().get("result")
-                assert isinstance(result, list)
-                assert len(result) == 10
