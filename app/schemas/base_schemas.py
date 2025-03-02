@@ -1,5 +1,3 @@
-import uuid
-
 from pydantic import BaseModel
 
 class User(BaseModel):
@@ -11,11 +9,15 @@ class User(BaseModel):
     photo_url: str
 
     activity: int = 0
-    liked_post_ids: list[int] = list()
-    disliked_post_ids: list[int] = list()
+    liked_card_ids: list[int] = list()
+    disliked_card_ids: list[int] = list()
     comments_ids: list[int] = list()
 
     registration_date: str
+
+class Visited(BaseModel):
+    user_id: int
+    cards_visited: set[int]
 
 class Card(BaseModel):
     card_id: int

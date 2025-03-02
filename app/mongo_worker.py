@@ -55,6 +55,18 @@ class MongoWorker:
             upsert=True,
             return_document=True)
         return counter["counter"]
+    
+    
+    def get_visited_cards(self, user_id: int) -> Visited:
+        document = self.visited_data.find_one({"user_id": user_id})
+        return Visited.model_validate(document)
+    
+    def update_visited_cards(self, user_id: int, visited_card_id: int) -> Visited:
+        update_visited = self.visited_data.find_one_and_update({"user_id": user_id},
+                                                               {"$addToSet": {"cards_visited": visited_card_id}},
+                                                               upsert=True,
+                                                               return_document=True)
+        return Visited.model_validate(update_visited)
 
 
     def add_card(self, choice_A: str, choice_B: str, author_id: int) -> Card:
@@ -135,11 +147,13 @@ class MongoWorker:
 if __name__ == "__main__":
     mongo = MongoWorker()
     #print(mongo.check_user(123))
-    print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "photo_0.jpg"))
+    #print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "photo_0.jpg"))
     #print(mongo.get_user(123))
-    print(mongo.add_card("A", "B", 123))
+    #print(mongo.add_card("A", "B", 123))
     #print(mongo.get_random_cards(10, active_status=False))
     #print(mongo.update_counter("cards_counter"))
-    print(mongo.select_choice(1, "A"))
-    print(mongo.like_card(1, 455412573))
-    print(mongo.dislike_card(1, 455412573))
+    #print(mongo.select_choice(1, "A"))
+    #print(mongo.like_card(1, 455412573))
+    #print(mongo.dislike_card(1, 455412573))
+    print(mongo.update_visited_cards(123, 2))
+    print(mongo.get_visited_cards(123))
