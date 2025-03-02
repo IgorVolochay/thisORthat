@@ -57,12 +57,23 @@ class MongoWorker:
         return counter["counter"]
     
     
-    def get_visited_cards(self, user_id: int) -> Optional[Visited]:
+    def get_visited_cards(self, user_id: int) -> BaseResponse:
         document = self.visited_data.find_one({"user_id": user_id})
         if not document:
-            return None
+            check_user = self.check_user(user_id)
+            if check_user:
+                return BaseResponse(result=Visited(user_id=user_id,
+                                                   cards_visited=set()))
+            else:
+                return BaseResponse(result="User doesn't exist", error=True)
         else:
-            return Visited.model_validate(document)
+            return BaseResponse(result=Visited.model_validate(document))
+        
+    def filter_cards(self, random_cards: list[Card], cards_visited: set) -> tuple[list[Optional[Card]], int]:
+        filtered_cards = [card for card in random_cards if card.card_id not in cards_visited]
+        filtered_cards_id = [filtered_card.card_id for filtered_card in filtered_cards]
+        
+        return filtered_cards, filtered_cards_id
     
     def update_visited_cards(self, user_id: int, visited_card_id: int) -> Visited:
         update_visited = self.visited_data.find_one_and_update({"user_id": user_id},
@@ -159,4 +170,4 @@ if __name__ == "__main__":
     #print(mongo.like_card(1, 455412573))
     #print(mongo.dislike_card(1, 455412573))
     print(mongo.update_visited_cards(123, 2))
-    print(mongo.get_visited_cards(12))
+    print(mongo.get_visited_cards(123).result.cards_visited)

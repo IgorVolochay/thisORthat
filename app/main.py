@@ -55,14 +55,42 @@ async def get_card(card_id: NonNegativeInt,
         return BaseResponse(result="There is no card with this card_id", error=True)
     
 @app.get("/get_random_cards", status_code=200)
-async def get_random_cards(response: Response,
+async def get_random_cards(user_id: NonNegativeInt,
+                           response: Response,
                            mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
-    result = mongo.get_random_cards(10, True)
-    if result:
-        return BaseResponse(result=result)
+    cards_visited = mongo.get_visited_cards(user_id)
+
+    if cards_visited.result == "User doesn't exist":
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return BaseResponse(result="User doesn't exist", error=True)
+    elif not cards_visited.result.cards_visited:
+        random_cards = mongo.get_random_cards(10, True)
+        if random_cards:
+            return BaseResponse(result=random_cards)
+        else:
+            response.status_code = status.HTTP_404_NOT_FOUND
+            return BaseResponse(result="No active cards", error=True)
     else:
-        response.status_code = status.HTTP_404_NOT_FOUND
-        return BaseResponse(result="No active cards", error=True)
+        result = list()
+        trys = 3
+        while len(result) < 10 and trys != 0:
+            random_cards = mongo.get_random_cards(10, True)
+            if not random_cards:
+                response.status_code = status.HTTP_404_NOT_FOUND
+                return BaseResponse(result="No active cards", error=True)
+            filtered_cards, filtered_cards_id = mongo.filter_cards(random_cards, cards_visited.result.cards_visited)
+            trys -= 1
+            if not filtered_cards:
+                continue
+            else:
+                result.extend(filtered_cards)
+                cards_visited.result.cards_visited.update(filtered_cards_id)
+        if not result:
+            response.status_code = status.HTTP_404_NOT_FOUND
+            return BaseResponse(result="No active cards fo this user", error=True)
+        else:
+            return BaseResponse(result=result)
+    
     
 @app.post("/add_card", status_code=201)
 async def add_card(new_card: AddCardBody,
