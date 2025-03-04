@@ -52,6 +52,8 @@ jobs:
         run: |
           pip install pytest==8.3.4 pytest-asyncio==0.25.3 httpx==0.28.1
           pip install -r requirements.txt
-
+      - name: Setup moderated base cards
+        working-directory: ./app/tools
+        run: python3 _add_base_cards.py -a 2 -f data/base_cards.json
       - name: Run pytest
         run: pytest -vs
