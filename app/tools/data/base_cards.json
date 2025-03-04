@@ -31,8 +31,8 @@
     },
     {
         "card_id": 3,
-        "choice_A": "Поездка в горы",
-        "choice_B": "Поездка на море",
+        "choice_A": "Отпуск в горах",
+        "choice_B": "Отпуск на море",
         "count_choice_A": 0,
         "count_choice_B": 0,
         "count_total": 0,

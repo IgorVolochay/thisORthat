@@ -83,12 +83,21 @@ class MongoWorker:
         return Visited.model_validate(update_visited)
 
 
-    def add_card(self, choice_A: str, choice_B: str, author_id: int) -> Card:
+    def add_card_by_api(self, choice_A: str, choice_B: str, author_id: int) -> Card:
         new_card = Card(card_id=self.get_and_update_counter(counter_name="card"),
                         choice_A=choice_A,
                         choice_B=choice_B,
                         author_id=author_id,
                         creation_date=datetime.now().isoformat())
+        try:
+            self.game_data.insert_one(new_card.model_dump())
+            return new_card
+        except Exception as exception:
+            print(exception)
+            return new_card
+        
+    def add_card_by_base_model(self, new_card: Card) -> Card:
+        new_card.card_id = self.get_and_update_counter(counter_name="card")
         try:
             self.game_data.insert_one(new_card.model_dump())
             return new_card

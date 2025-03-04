@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-sys.path.append('..')
+#sys.path.append('..')
 from mongo_worker import MongoWorker
 from schemas.base_schemas import Card
 

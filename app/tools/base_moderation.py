@@ -1,6 +1,6 @@
 import re
 
-from dirty_words import dirty_words_set
+from tools.data.dirty_words import dirty_words_set
 
 def is_not_empty(text: str) -> bool:
     """Checks that the text is not empty."""

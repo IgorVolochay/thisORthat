@@ -20,3 +20,9 @@ class AddCardBody(BaseModel):
     choice_B: str
 
     author_id: NonNegativeInt
+
+class SelectChoice(BaseModel):
+    user_id: NonNegativeInt
+    card_id: NonNegativeInt
+
+    choice: typing.Literal["A", "B"]
