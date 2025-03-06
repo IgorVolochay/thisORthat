@@ -16,13 +16,13 @@ class MongoWorker:
         self.client = pymongo.MongoClient(host = os.getenv('MONGO_HOST'),
                                           port = int(os.getenv('MONGO_PORT')),
                                           username = os.getenv('MONGO_USER'),
-                                          password = os.getenv('MONGO_PASS'),
-                                          uuidRepresentation="standard")
+                                          password = os.getenv('MONGO_PASS'))
         self.db = self.client["data"]
         self.users_data = self.db["users"]
         self.visited_data = self.db["visited"]
         self.counters = self.db["counters"]
         self.game_data = self.db["cards"]
+        self.comments_data = self.db["comments"]
 
 
     def check_user(self, user_id: int) -> bool:
@@ -187,6 +187,29 @@ class MongoWorker:
                 return BaseResponse(result="User doesn't exist", error=True)
             else:
                 return BaseResponse(result=True, error=False)
+        else:
+            return BaseResponse(result="User doesn't exist", error=True)
+        
+    def add_comment(self, user_id: int, card_id: int, comment_text: str) -> BaseResponse:
+        if self.check_user(user_id):
+            if self.get_card(card_id):
+                new_comment = Comment(comment_id=self.get_and_update_counter(counter_name="comment"),
+                                    author_id=user_id,
+                                    card_id=card_id,
+                                    commet_text=comment_text,
+                                    creation_date=datetime.now().isoformat())
+                result = self.comments_data.insert_one(new_comment.model_dump())
+                if result:
+                    update_user_comments = self.users_data.find_one_and_update({"user_id": user_id},
+                                                        {"$addToSet": {"comments_ids": new_comment.comment_id}})
+                    if update_user_comments:
+                        return BaseResponse(result=new_comment)
+                    else:
+                        return BaseResponse(result="Difficulty adding comment_id to user", error=True)
+                else:
+                    return BaseResponse(result="Add comment error", error=True)
+            else:
+                return BaseResponse(result="Card doesn't exist", error=True)
         else:
             return BaseResponse(result="User doesn't exist", error=True)
 

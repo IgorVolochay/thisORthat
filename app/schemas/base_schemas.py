@@ -37,3 +37,12 @@ class Card(BaseModel):
     creation_date: str
     moderation_date: str = "Not moderated"
     active_status: bool = False
+
+class Comment(BaseModel):
+    comment_id: int
+
+    author_id: int
+    card_id: int
+    commet_text: str
+
+    creation_date: str

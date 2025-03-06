@@ -30,3 +30,9 @@ class SelectChoice(BaseModel):
 class ReactionCard(BaseModel):
     user_id: NonNegativeInt
     card_id: NonNegativeInt
+
+class AddCommentBody(BaseModel):
+    author_id: NonNegativeInt
+    card_id: NonNegativeInt
+
+    comment_text: str

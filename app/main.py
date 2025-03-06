@@ -148,6 +148,24 @@ async def dislike_card(dislike_data: ReactionCard,
         response.status_code = status.HTTP_404_NOT_FOUND
         return result
     
+@app.post("/comment", status_code=201)
+async def comment(comment_info: AddCommentBody,
+                  response: Response,
+                  mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
+    if not moderate_text(comment_info.comment_text):
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return BaseResponse(result="Comment has not passed base moderation", error=True)
+    
+    result = mongo.add_comment(comment_info.author_id, comment_info.card_id, comment_info.comment_text)
+    if result.error and result.result in ["User doesn't exist", "Card doesn't exist"]:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return result
+    elif result.error:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return result
+    else:
+        return result
+    
 
 async def main():
     config = uvicorn.Config("main:app", port=5000, log_level="debug")
