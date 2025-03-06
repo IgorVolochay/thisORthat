@@ -26,3 +26,7 @@ class SelectChoice(BaseModel):
     card_id: NonNegativeInt
 
     choice: typing.Literal["A", "B"]
+
+class ReactionCard(BaseModel):
+    user_id: NonNegativeInt
+    card_id: NonNegativeInt
