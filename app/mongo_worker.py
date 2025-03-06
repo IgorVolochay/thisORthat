@@ -140,31 +140,55 @@ class MongoWorker:
         else:
             return BaseResponse(result=result, error=False)
     
-    def like_card(self, card_id: int, user_id: int) -> BaseResponse:
-        update_card_info = self.game_data.find_one_and_update({"card_id": card_id}, 
-                                                              {"$inc": {"count_likes": 1}})
-        if not update_card_info:
-            return BaseResponse(result="Card doesn't exist", error=True)
+    def check_user_reactions(self, user_id: int, card_id: int) -> BaseResponse:
+        user_info: User = self.get_user(user_id)
+        liked_card_ids: list = user_info.liked_card_ids
+        disliked_card_ids: list = user_info.disliked_card_ids
+
+        if card_id in liked_card_ids:
+            return BaseResponse(result="Card already liked", error=True)
+        elif card_id in disliked_card_ids:
+            return BaseResponse(result="Card already disliked", error=True)
         else:
+            return BaseResponse(result="No reactions", error=False)
+
+    def like_card(self, card_id: int, user_id: int) -> BaseResponse:
+        if self.check_user(user_id):
+            user_reaction = self.check_user_reactions(user_id, card_id)
+            if user_reaction.error:
+                return user_reaction
+            update_card_info = self.game_data.find_one_and_update({"card_id": card_id}, 
+                                                                {"$inc": {"count_likes": 1}})
+            if not update_card_info:
+                return BaseResponse(result="Card doesn't exist", error=True)
+            
             add_card_to_user = self.users_data.update_one({'user_id': user_id},
                                                           {'$push': {'liked_card_ids': card_id}})
             if not add_card_to_user:
                 return BaseResponse(result="User doesn't exist", error=True)
             else:
                 return BaseResponse(result=True, error=False)
+        else:
+            return BaseResponse(result="User doesn't exist", error=True)
             
     def dislike_card(self, card_id: int, user_id: int) -> BaseResponse:
-        update_card_info = self.game_data.find_one_and_update({"card_id": card_id}, 
-                                                              {"$inc": {"count_dislikes": 1}})
-        if not update_card_info:
-            return BaseResponse(result="Card doesn't exist", error=True)
-        else:
+        if self.check_user(user_id):
+            user_reaction = self.check_user_reactions(user_id, card_id)
+            if user_reaction.error:
+                return user_reaction
+            update_card_info = self.game_data.find_one_and_update({"card_id": card_id}, 
+                                                                {"$inc": {"count_dislikes": 1}})
+            if not update_card_info:
+                return BaseResponse(result="Card doesn't exist", error=True)
+            
             add_card_to_user = self.users_data.update_one({'user_id': user_id},
                                                           {'$push': {'disliked_card_ids': card_id}})
             if not add_card_to_user:
                 return BaseResponse(result="User doesn't exist", error=True)
             else:
                 return BaseResponse(result=True, error=False)
+        else:
+            return BaseResponse(result="User doesn't exist", error=True)
 
 
 if __name__ == "__main__":

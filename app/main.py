@@ -125,7 +125,29 @@ async def select_choice(choice_data: SelectChoice,
         else:
             update_visited_result = mongo.update_visited_cards(choice_data.user_id, choice_data.card_id)
             return BaseResponse(result="Select choice complite!")
+        
+@app.patch("/like_card", status_code=200)
+async def like_card(like_data: ReactionCard,
+                    response: Response,
+                    mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
+    result = mongo.like_card(like_data.card_id, like_data.user_id)
+    if not result.error and result.result:
+        return BaseResponse(result="Added like to card")
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return result
 
+@app.patch("/dislike_card", status_code=200)
+async def dislike_card(dislike_data: ReactionCard,
+                    response: Response,
+                    mongo: MongoWorker = Depends(MongoWorker)) -> BaseResponse:
+    result = mongo.dislike_card(dislike_data.card_id, dislike_data.user_id)
+    if not result.error and result.result:
+        return BaseResponse(result="Added dislike to card")
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return result
+    
 
 async def main():
     config = uvicorn.Config("main:app", port=5000, log_level="debug")
