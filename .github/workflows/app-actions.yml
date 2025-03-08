@@ -1,6 +1,7 @@
 name: app-actions
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '**.py'
@@ -10,7 +11,7 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
+
 
 
 jobs:

@@ -183,7 +183,7 @@ async def comment(comment_info: AddCommentBody,
     
 
 async def main():
-    config = uvicorn.Config("main:app", port=5000, log_level="debug")
+    config = uvicorn.Config("main:app", port=5000, log_level="debug",)
     server = uvicorn.Server(config)
     await server.serve()
 
