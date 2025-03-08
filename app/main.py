@@ -1,6 +1,9 @@
+import os
+
 import uvicorn
 import asyncio
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, Response, status
 
 from schemas.api_schemas import *
@@ -9,11 +12,18 @@ from mongo_worker import MongoWorker
 from tools.base_moderation import moderate_text
 
 
+load_dotenv()
+disable_docs = os.getenv("DISABLE_DOCS", "true").lower() == "true"
+
 app: FastAPI = FastAPI(title="This OR That",
                     summary="OpenAPI schema for \"This OR That\" project!",
                     version="0.1",
-                    contact={"GitHub": "https://github.com/IgorVolochay/thisORthat"})
+                    contact={"GitHub": "https://github.com/IgorVolochay/thisORthat"},
+                    docs_url=None if disable_docs else "/docs",
+                    redoc_url=None if disable_docs else "/redoc",
+                    openapi_url=None if disable_docs else "/openapi.json")
 mongo_worker = MongoWorker()
+
 
 @app.get("/check_user", status_code=200)
 async def check_user(user_id: NonNegativeInt,
