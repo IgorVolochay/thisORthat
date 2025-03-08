@@ -2,12 +2,12 @@ import os
 
 import pymongo
 
-from schemas.base_schemas import *
-from schemas.api_schemas import *
-from typing import Optional
-
 from datetime import datetime
 from dotenv import load_dotenv
+from typing import Optional
+
+from schemas.base_schemas import *
+from schemas.api_schemas import *
 
 
 class MongoWorker:
@@ -96,7 +96,7 @@ class MongoWorker:
             print(exception)
             return new_card
         
-    def add_card_by_base_model(self, new_card: Card) -> Card:
+    def add_card_by_base_model(self, new_card: Card) -> Optional[Card]:
         new_card.card_id = self.get_and_update_counter(counter_name="card")
         try:
             self.game_data.insert_one(new_card.model_dump())
@@ -212,18 +212,3 @@ class MongoWorker:
                 return BaseResponse(result="Card doesn't exist", error=True)
         else:
             return BaseResponse(result="User doesn't exist", error=True)
-
-
-if __name__ == "__main__":
-    mongo = MongoWorker()
-    #print(mongo.check_user(123))
-    #print(mongo.add_user(123, "VolochayIgor", "Igor", "Volochay", "photo_0.jpg"))
-    #print(mongo.get_user(123))
-    #print(mongo.add_card("A", "B", 123))
-    #print(mongo.get_random_cards(10, active_status=False))
-    #print(mongo.update_counter("cards_counter"))
-    #print(mongo.select_choice(1, "A"))
-    #print(mongo.like_card(1, 455412573))
-    #print(mongo.dislike_card(1, 455412573))
-    print(mongo.update_visited_cards(123, 2))
-    print(mongo.get_visited_cards(123).result.cards_visited)
