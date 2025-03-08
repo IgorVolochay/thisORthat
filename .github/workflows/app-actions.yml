@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install mypy
-          pip install -r requirements.txt
+          pip install -r app/requirements.txt
 
       - name: Run mypy
         run: mypy --ignore-missing-imports ./app
@@ -46,13 +46,14 @@ jobs:
           architecture: x64
 
       - name: Setup MongoDB
-        run: docker run --name mongodb -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=user -e MONGO_INITDB_ROOT_PASSWORD=pass mongodb/mongodb-community-server
+        run: docker run --name mongodb -d -p $MONGO_PORT:27017 -e MONGO_INITDB_ROOT_USERNAME=$MONGO_USER -e MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASS mongodb/mongodb-community-server
 
       - name: Install dependencies
         run: |
           pip install pytest==8.3.4 pytest-asyncio==0.25.3 httpx==0.28.1
-          pip install -r requirements.txt
+          pip install -r app/requirements.txt
       - name: Setup moderated base cards
+        
         working-directory: ./app/tools
         run: python3 _add_base_cards.py -a 2 -f data/base_cards.json
       - name: Run pytest
