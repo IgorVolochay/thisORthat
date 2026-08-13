@@ -196,7 +196,7 @@ class MongoWorker:
                 new_comment = Comment(comment_id=self.get_and_update_counter(counter_name="comment"),
                                     author_id=user_id,
                                     card_id=card_id,
-                                    commet_text=comment_text,
+                                    comment_text=comment_text,
                                     creation_date=datetime.now().isoformat())
                 result = self.comments_data.insert_one(new_comment.model_dump())
                 if result:
