@@ -1,0 +1,82 @@
+.card-pair {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  padding-bottom: var(--space-sm);
+  min-height: 0;
+}
+
+.card-pair-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  min-height: 0;
+}
+
+.card-wrapper {
+  display: flex;
+  min-height: 0;
+  transition: flex-grow var(--duration-card) var(--ease-spring);
+}
+
+.card-wrapper .card {
+  flex: 1;
+  width: 100%;
+}
+
+/* Empty state */
+.card-pair--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  width: 100%;
+  max-width: 320px;
+  animation: hintFadeIn 600ms var(--ease-smooth);
+}
+
+.card-pair-empty-text {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.empty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.empty-btn {
+  width: 100%;
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.empty-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.empty-btn--primary {
+  background: linear-gradient(135deg, var(--color-card-a-to), var(--color-card-b-to));
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.empty-btn--primary:active {
+  transform: scale(0.97);
+}

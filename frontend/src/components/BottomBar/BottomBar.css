@@ -1,0 +1,74 @@
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: var(--bar-height);
+  padding: 0 var(--space-lg);
+  background: var(--color-bg-elevated);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.bar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-smooth),
+              transform var(--duration-fast) var(--ease-smooth);
+  color: var(--color-muted);
+}
+
+.bar-btn:active {
+  transform: scale(0.92);
+}
+
+.bar-btn--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.bar-btn--disabled.bar-btn--active {
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* Active states */
+.bar-btn--like.bar-btn--active {
+  color: var(--color-like);
+  animation: popIn 300ms var(--ease-spring);
+}
+
+.bar-btn--dislike.bar-btn--active {
+  color: var(--color-dislike);
+  animation: popIn 300ms var(--ease-spring);
+}
+
+.bar-btn--comments {
+  color: var(--color-muted);
+}
+
+.bar-btn--comments:not(.bar-btn--disabled) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bar-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.bar-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+@keyframes popIn {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}

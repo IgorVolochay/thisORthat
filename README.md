@@ -9,15 +9,23 @@ Telegram mini-app where you have to choose one of two things.
 git clone https://github.com/IgorVolochay/thisORthat
 ```
 
+### Manual setup:
+
 2. The project is written in Python3.9. Make sure you have it on your system. Go to the project folder, create a virtual environment and download pip requirements:
 ```bash
 cd ./thisORthat
 python3.9 -m venv venv
 source ./venv/bin/activate
-pip3 install -r requirements.txt
+pip3 install -r ./app/requirements.txt
 ```
 
 3. Installing MongoDB database. You can use the [official manual](https://www.mongodb.com/docs/manual/installation/) to install MongoDB manually, or use a [Docker image](https://hub.docker.com/r/mongodb/mongodb-community-server) to run the container:
 ```bash
-docker run --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server
+docker run --name mongodb -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=user -e MONGO_INITDB_ROOT_PASSWORD=pass mongodb/mongodb-community-server
+```
+### Docker Compose setup:
+
+2. Use docker-compose to automatically build the entire project. For correct build, it is better to use docker-compose version 1.29.2:
+```bash
+docker-compose up --build
 ```

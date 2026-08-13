@@ -1,0 +1,38 @@
+import typing
+
+from pydantic import BaseModel, NonNegativeInt
+
+
+class BaseResponse(BaseModel):
+    result: typing.Any
+    error: bool = False
+
+class AddUserBody(BaseModel):
+    user_id: NonNegativeInt
+    username: str
+
+    first_name: str
+    last_name: str
+    photo_url: str
+
+class AddCardBody(BaseModel):
+    choice_A: str
+    choice_B: str
+
+    author_id: NonNegativeInt
+
+class SelectChoice(BaseModel):
+    user_id: NonNegativeInt
+    card_id: NonNegativeInt
+
+    choice: typing.Literal["A", "B"]
+
+class ReactionCard(BaseModel):
+    user_id: NonNegativeInt
+    card_id: NonNegativeInt
+
+class AddCommentBody(BaseModel):
+    author_id: NonNegativeInt
+    card_id: NonNegativeInt
+
+    comment_text: str
