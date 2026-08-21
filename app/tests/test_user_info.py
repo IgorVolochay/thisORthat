@@ -16,7 +16,7 @@ NON_EXIST_USER = random.randint(100000000, 1000000000)
 
 # TEST ADD USERS UTILS #
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_user_non_full_data():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -30,7 +30,7 @@ async def test_add_user_non_full_data():
 
         assert raw_response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_user_negative_int_id():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -47,7 +47,7 @@ async def test_add_user_negative_int_id():
 
         assert raw_response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_new_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -67,7 +67,7 @@ async def test_add_new_user():
         assert response.error == False
         assert User.model_validate(response.result)
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_already_exist_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -92,7 +92,7 @@ async def test_add_already_exist_user():
 
 # TEST CHECK USERS UTILS #
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_check_non_exist_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -106,7 +106,7 @@ async def test_check_non_exist_user():
         assert response.error == False
         assert response.result == False
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_check_exist_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -125,7 +125,7 @@ async def test_check_exist_user():
 
 # TEST GET USERS UTILS #
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_non_exist_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -139,7 +139,7 @@ async def test_get_non_exist_user():
         assert response.error == True 
         assert response.result == "User doesn't exist"
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_exist_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:

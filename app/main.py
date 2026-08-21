@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, Response, Header, HTTPException, status
 from guard import SecurityMiddleware, SecurityConfig
 
+from typing import Optional
+
 from schemas.api_schemas import BaseResponse, AddUserBody, AddCardBody, SelectChoice, ReactionCard, AddCommentBody
 from schemas.base_schemas import Card
 from mongo_worker import MongoWorker
@@ -42,7 +44,14 @@ config = SecurityConfig(
 
 app.add_middleware(SecurityMiddleware, config=config)
 mongo_worker = MongoWorker()
-rabbit_worker = RabbitWorker()
+_rabbit_worker: Optional[RabbitWorker] = None
+
+
+def get_rabbit_worker() -> RabbitWorker:
+    global _rabbit_worker
+    if _rabbit_worker is None:
+        _rabbit_worker = RabbitWorker()
+    return _rabbit_worker
 
 MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
 
@@ -50,7 +59,6 @@ MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
 async def verify_moderation_secret(
     x_moderation_secret: str = Header(..., alias="X-Moderation-Secret"),
 ) -> str:
-    """Проверяет секретный ключ модерации в заголовке запроса."""
     if not secrets.compare_digest(x_moderation_secret, MODERATION_SECRET):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -146,7 +154,7 @@ async def add_card(
 
         # Отправляем карточку в RabbitMQ на ручную модерацию админом
         try:
-            await rabbit_worker.send_to_moderation(card)
+            await get_rabbit_worker().send_to_moderation(card)
         except Exception as exc:
             logger.error("Failed to send card %s to moderation queue: %s", card.card_id, exc)
 

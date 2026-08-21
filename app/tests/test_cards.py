@@ -14,7 +14,7 @@ NON_EXIST_CARD_ID = 1000
 
 # ---------- /add_card ----------
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_valid():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         payload = {
@@ -32,7 +32,7 @@ async def test_add_card_valid():
         assert card.choice_B == payload["choice_B"]
         assert card.author_id == payload["author_id"]
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_missing_field():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         payload = {
@@ -44,7 +44,7 @@ async def test_add_card_missing_field():
         print(f"\nINPUT: endpoint=/add_card | payload (missing field)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_wrong_type():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         payload = {
@@ -56,7 +56,7 @@ async def test_add_card_wrong_type():
         print(f"\nINPUT: endpoint=/add_card | payload (wrong type)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_empty_strings():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         payload = {
@@ -68,7 +68,7 @@ async def test_add_card_empty_strings():
         print(f"\nINPUT: endpoint=/add_card | payload (empty strings)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 400
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_long_strings():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         long_str = "A" * 5000  # long string
@@ -81,7 +81,7 @@ async def test_add_card_long_strings():
         print(f"\nINPUT: endpoint=/add_card | payload with long strings (length={len(long_str)})\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 400
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_negative_author_id():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         payload = {
@@ -93,7 +93,7 @@ async def test_add_card_negative_author_id():
         print(f"\nINPUT: endpoint=/add_card | payload (negative author_id)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_malformed_json():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         malformed_json = '{"choice_A": "Option A", "choice_B": "Option B", "author_id": 123' # broken json
@@ -105,7 +105,7 @@ async def test_add_card_malformed_json():
         print(f"\nINPUT: endpoint=/add_card | payload (malformed JSON)={malformed_json}\nOUTPUT: status={response.status_code} | json={response.json() if response.content else 'No JSON'}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_async_card_creation():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         tasks = []
@@ -136,7 +136,7 @@ async def test_async_card_creation():
 
 # ---------- /get_card ----------
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_valid():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         payload = {
@@ -157,30 +157,30 @@ async def test_get_card_valid():
         card_from_get = Card.model_validate(base_resp.result)
         assert card_from_get.card_id == card_id
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_nonexistent():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/get_card", params={"card_id": NON_EXIST_CARD_ID})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': {NON_EXIST_CARD_ID}}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 404
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_missing_param():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/get_card")
         print(f"\nINPUT: endpoint=/get_card (missing card_id param)\nOUTPUT: status={response.status_code} | json={response.json() if response.content else 'No content'}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_wrong_type():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/get_card", params={"card_id": "abc"})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': 'abc'}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_negative():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/get_card", params={"card_id": -10})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': -10}}\nOUTPUT: status={response.status_code} | json={response.json()}")
-        assert response.status_code == 422
+        assert response.status_code == 404

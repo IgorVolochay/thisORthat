@@ -14,7 +14,7 @@ ACTIVE_CARDS_LESS_THAN_TEN = False
 
 # ------------- /add_user ---------------
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_new_user():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url='http://test') as client:
@@ -36,7 +36,7 @@ async def test_add_new_user():
 
 # ---------- /get_random_cards ----------
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_random_cards_valid():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         params = {"user_id": EXIST_USER}
@@ -61,7 +61,7 @@ async def test_get_random_cards_valid():
                 ACTIVE_CARDS_LESS_THAN_TEN = True
                 pytest.skip(reason="The number of active cards is less than 10 in MongoDB")
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_random_cards_randomness():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         params = {"user_id": EXIST_USER}
@@ -73,7 +73,7 @@ async def test_get_random_cards_randomness():
         if len(result1) == 10 and len(result2) == 10:
             assert result1 != result2
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_random_cards_parallel_requests():
     if NO_ACTIVE_CARDS_STATUS:
         pytest.skip(reason="No active cards in MongoDB")
