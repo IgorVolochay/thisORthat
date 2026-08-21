@@ -17,8 +17,6 @@ from tools.base_moderation import moderate_text
 
 
 logger = logging.getLogger(__name__)
-
-
 load_dotenv()
 disable_docs = os.getenv("DISABLE_DOCS", "true").lower() == "true"
 
