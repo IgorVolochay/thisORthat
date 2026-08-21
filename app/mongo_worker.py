@@ -240,7 +240,7 @@ class MongoWorker:
             comment_id=await self.get_and_update_counter(counter_name="comment"),
             author_id=user_id,
             card_id=card_id,
-            commet_text=comment_text,
+            comment_text=comment_text,
             creation_date=datetime.now().isoformat(),
         )
         await self.comments_data.insert_one(new_comment.model_dump())
