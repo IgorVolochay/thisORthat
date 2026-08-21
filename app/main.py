@@ -1,15 +1,22 @@
 import os
+import secrets
+import logging
 
 import uvicorn
 import asyncio
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, Response, status
+from fastapi import FastAPI, Depends, Response, Header, HTTPException, status
+from guard import SecurityMiddleware, SecurityConfig
 
 from schemas.api_schemas import BaseResponse, AddUserBody, AddCardBody, SelectChoice, ReactionCard, AddCommentBody
 from schemas.base_schemas import Card
 from mongo_worker import MongoWorker
+from rabbit_worker import RabbitWorker
 from tools.base_moderation import moderate_text
+
+
+logger = logging.getLogger(__name__)
 
 
 load_dotenv()
@@ -24,7 +31,34 @@ app: FastAPI = FastAPI(
     redoc_url=None if disable_docs else "/redoc",
     openapi_url=None if disable_docs else "/openapi.json",
 )
+config = SecurityConfig(
+    enable_rate_limiting=True,
+    rate_limit=120,
+    rate_limit_window=60,
+    enable_redis=False,
+    enable_ip_banning=True,
+    auto_ban_threshold=3,
+    auto_ban_duration=3600,
+    custom_log_file="security.log",
+)
+
+app.add_middleware(SecurityMiddleware, config=config)
 mongo_worker = MongoWorker()
+rabbit_worker = RabbitWorker()
+
+MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
+
+
+async def verify_moderation_secret(
+    x_moderation_secret: str = Header(..., alias="X-Moderation-Secret"),
+) -> str:
+    """Проверяет секретный ключ модерации в заголовке запроса."""
+    if not secrets.compare_digest(x_moderation_secret, MODERATION_SECRET):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid moderation secret",
+        )
+    return x_moderation_secret
 
 
 @app.on_event("startup")
@@ -111,9 +145,40 @@ async def add_card(
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
     if moderate_text(new_card.choice_A) and moderate_text(new_card.choice_B):
         card = await mongo.add_card_by_api(new_card.choice_A, new_card.choice_B, new_card.author_id)
+
+        # Отправляем карточку в RabbitMQ на ручную модерацию админом
+        try:
+            await rabbit_worker.send_to_moderation(card)
+        except Exception as exc:
+            logger.error("Failed to send card %s to moderation queue: %s", card.card_id, exc)
+
         return BaseResponse(result=card)
     response.status_code = status.HTTP_400_BAD_REQUEST
     return BaseResponse(result="Card has not passed base moderation", error=True)
+
+
+@app.patch("/card_accept", status_code=200, dependencies=[Depends(verify_moderation_secret)])
+async def card_accept(
+    card_id: int,
+    response: Response,
+    mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Принимает карточку — доступ только с секретным ключом."""
+    result = await mongo.accept_card(card_id)
+    if result.error:
+        response.status_code = status.HTTP_404_NOT_FOUND
+    return result
+
+
+@app.patch("/card_reject", status_code=200, dependencies=[Depends(verify_moderation_secret)])
+async def card_reject(
+    card_id: int,
+    response: Response,
+    mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Отклоняет карточку — доступ только с секретным ключом."""
+    result = await mongo.reject_card(card_id)
+    if result.error:
+        response.status_code = status.HTTP_404_NOT_FOUND
+    return result
 
 
 @app.patch("/select_choice", status_code=200)

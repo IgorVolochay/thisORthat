@@ -141,6 +141,27 @@ class MongoWorker:
             logger.error("Failed to insert card: %s", exc)
             raise
 
+    async def accept_card(self, card_id: int) -> BaseResponse:
+        """Принимает карточку: ставит active_status=True и moderation_date=сейчас."""
+        result = await self.game_data.find_one_and_update(
+            {"card_id": card_id},
+            {"$set": {
+                "active_status": True,
+                "moderation_date": datetime.now().isoformat(),
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        if not result:
+            return BaseResponse(result="Card doesn't exist", error=True)
+        return BaseResponse(result=Card.model_validate(result))
+
+    async def reject_card(self, card_id: int) -> BaseResponse:
+        """Отклоняет карточку: удаляет её из БД."""
+        result = await self.game_data.delete_one({"card_id": card_id})
+        if result.deleted_count == 0:
+            return BaseResponse(result="Card doesn't exist", error=True)
+        return BaseResponse(result=f"Card {card_id} rejected and deleted")
+
     async def select_choice(self, card_id: int, choice: str) -> BaseResponse:
         if choice == "A":
             count_field = "count_choice_A"
