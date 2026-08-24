@@ -34,7 +34,7 @@ class MongoWorker:
         self.comments_data = self.db["comments"]
 
     async def create_indexes(self) -> None:
-        """Создаёт индексы при старте приложения."""
+        """Creates indexes on application startup."""
         await self.users_data.create_index("user_id", unique=True)
         await self.game_data.create_index("card_id", unique=True)
         await self.game_data.create_index("active_status")
@@ -66,7 +66,7 @@ class MongoWorker:
 
 
     async def get_and_update_counter(self, counter_name: str) -> int:
-        """Атомарно инкрементирует счётчик и возвращает новое значение."""
+        """Atomically increments the counter and returns the new value."""
         counter = await self.counters.find_one_and_update(
             {"counter_name": counter_name},
             {"$inc": {"counter": 1}},
@@ -101,7 +101,7 @@ class MongoWorker:
         return None
 
     async def get_random_cards(self, amount: int,active_status: bool,exclude_ids: Optional[set[int]] = None,) -> Optional[list[Card]]:
-        """Возвращает случайные карточки, исключая уже просмотренные (одним запросом)."""
+        """Returns random cards, excluding already visited ones (in a single query)."""
         match_filter: dict = {"active_status": active_status}
         if exclude_ids:
             match_filter["card_id"] = {"$nin": list(exclude_ids)}
@@ -142,7 +142,7 @@ class MongoWorker:
             raise
 
     async def accept_card(self, card_id: int) -> BaseResponse:
-        """Принимает карточку: ставит active_status=True и moderation_date=сейчас."""
+        """Accepts a card: sets active_status=True and moderation_date=now."""
         result = await self.game_data.find_one_and_update(
             {"card_id": card_id},
             {"$set": {
@@ -156,7 +156,7 @@ class MongoWorker:
         return BaseResponse(result=Card.model_validate(result))
 
     async def reject_card(self, card_id: int) -> BaseResponse:
-        """Отклоняет карточку: удаляет её из БД."""
+        """Rejects a card: deletes it from the database."""
         result = await self.game_data.delete_one({"card_id": card_id})
         if result.deleted_count == 0:
             return BaseResponse(result="Card doesn't exist", error=True)

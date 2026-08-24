@@ -20,10 +20,9 @@ class RabbitWorker:
         self.url = (
             f"amqp://{os.getenv('RABBIT_USER')}:{os.getenv('RABBIT_PASS')}"
             f"@{os.getenv('RABBIT_HOST')}:{os.getenv('RABBIT_PORT')}"
-        )
+        )   
 
     async def send_to_moderation(self, card: Card) -> None:
-        """Отправляет карточку в очередь модерации."""
         connection = await aio_pika.connect_robust(self.url)
         async with connection:
             channel = await connection.channel()
@@ -41,7 +40,6 @@ class RabbitWorker:
         self,
         callback: Callable[[Card], Awaitable[None]],
     ) -> None:
-        """Бесконечно слушает очередь модерации и вызывает callback для каждой карточки."""
         connection = await aio_pika.connect_robust(self.url)
         async with connection:
             channel = await connection.channel()
@@ -61,7 +59,7 @@ class RabbitWorker:
 
             await queue.consume(on_message)
 
-            # Держим consumer живым, но позволяем отмену (Ctrl+C)
+            # Keep consumer alive while allowing cancellation (Ctrl+C)
             stop_event = asyncio.Event()
             try:
                 await stop_event.wait()

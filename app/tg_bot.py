@@ -1,11 +1,11 @@
 """
-Telegram-бот модерации карточек.
+Telegram card moderation bot.
 
-Слушает очередь RabbitMQ «moderation» и отправляет карточки
-в чат администратору с inline-кнопками «Принять ✅» / «Отклонить ❌».
+Listens to the RabbitMQ "moderation" queue and sends cards
+to the admin chat with inline buttons "Accept ✅" / "Reject ❌".
 
-При нажатии кнопки бот вызывает защищённые эндпоинты
-/card_accept или /card_reject с секретным заголовком.
+When a button is pressed, the bot calls protected endpoints
+/card_accept or /card_reject with a secret header.
 """
 
 import os
@@ -27,7 +27,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ── Конфигурация ──────────────────────────────────────────────
+# ── Configuration ──────────────────────────────────────────────
 BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 ADMIN_CHAT_ID = int(os.getenv("TG_ADMIN_CHAT_ID", "0"))
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000")
@@ -38,9 +38,9 @@ dp = Dispatcher()
 rabbit = RabbitWorker()
 
 
-# ── Отправка карточки администратору ──────────────────────────
+# ── Sending card to admin ──────────────────────────
 async def _get_author_username(author_id: int) -> str:
-    """Запрашивает username автора через API."""
+    """Fetches the author's username via API."""
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -57,7 +57,7 @@ async def _get_author_username(author_id: int) -> str:
 
 
 def _format_date(iso_date: str) -> str:
-    """Преобразует ISO-дату в формат ДД.ММ.ГГГГ ЧЧ:ММ:СС."""
+    """Converts ISO date to DD.MM.YYYY HH:MM:SS format."""
     try:
         dt = datetime.fromisoformat(iso_date)
         return dt.strftime("%d.%m.%Y %H:%M:%S")
@@ -66,7 +66,7 @@ def _format_date(iso_date: str) -> str:
 
 
 async def send_card_to_admin(card: Card) -> None:
-    """Формирует сообщение и inline-клавиатуру для карточки."""
+    """Formats message and inline keyboard for a card."""
     author_display = await _get_author_username(card.author_id)
     date_display = _format_date(card.creation_date)
 
@@ -100,10 +100,10 @@ async def send_card_to_admin(card: Card) -> None:
     logger.info("Sent card %s to admin chat", card.card_id)
 
 
-# ── Вызов защищённых эндпоинтов API ──────────────────────────
+# ── Calling protected API endpoints ──────────────────────────
 async def call_moderation_api(action: str, card_id: int) -> dict:
     """
-    Вызывает /card_accept или /card_reject с секретным заголовком.
+    Calls /card_accept or /card_reject with secret header.
     action: 'accept' | 'reject'
     """
     endpoint = f"{API_BASE_URL}/card_{action}"
@@ -116,7 +116,7 @@ async def call_moderation_api(action: str, card_id: int) -> dict:
             return data
 
 
-# ── Обработчики callback-кнопок ───────────────────────────────
+# ── Callback button handlers ───────────────────────────────
 @dp.callback_query(F.data.startswith("accept:"))
 async def on_accept(callback: CallbackQuery) -> None:
     card_id = int(callback.data.split(":")[1])
@@ -150,7 +150,7 @@ async def on_reject(callback: CallbackQuery) -> None:
     await callback.answer("Карточка отклонена!")
     logger.info("Card %s rejected by admin", card_id)
 
-# ── Lifecycle-хуки aiogram ────────────────────────────────────
+# ── aiogram Lifecycle hooks ────────────────────────────────────
 _rabbit_task: asyncio.Task | None = None
 
 

@@ -107,9 +107,14 @@ async def test_add_card_malformed_json():
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_async_card_creation():
+    """
+    Test parallel card creation.
+    Limit on /add_card — 3 requests/60s (decorator).
+    Send only 2 parallel requests to avoid exceeding the limit.
+    """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         tasks = []
-        num_cards = 8
+        num_cards = 2  # at most 3 (decorator limit), leaving a margin
         for i in range(num_cards):
             payload = {
                 "choice_A": f"Async Option A {i}",
@@ -118,7 +123,7 @@ async def test_async_card_creation():
             }
             tasks.append(client.post("/add_card", json=payload))
         responses = await asyncio.gather(*tasks)
-        
+
         card_ids = []
         for idx, response in enumerate(responses):
             print(f"\nAsync creation {idx}: status={response.status_code}, response={response.json()}")
@@ -139,16 +144,21 @@ async def test_async_card_creation():
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_valid():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # First create a card
         payload = {
             "choice_A": "GetTest A",
             "choice_B": "GetTest B",
             "author_id": EXIST_AUTHOR
         }
         create_resp = await client.post("/add_card", json=payload)
+        assert create_resp.status_code in (200, 201), (
+            f"Failed to create card: {create_resp.status_code} {create_resp.text}"
+        )
         base_create = BaseResponse.model_validate(create_resp.json())
         card = Card.model_validate(base_create.result)
         card_id = card.card_id
 
+        # Now retrieve it
         response = await client.get("/get_card", params={"card_id": card_id})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': {card_id}}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 200

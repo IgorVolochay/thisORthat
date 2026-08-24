@@ -7,7 +7,7 @@ import asyncio
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, Response, Header, HTTPException, status
-from guard import SecurityMiddleware, SecurityConfig
+from guard import SecurityMiddleware, SecurityConfig, SecurityDecorator
 
 from typing import Optional
 
@@ -33,16 +33,30 @@ app: FastAPI = FastAPI(
 )
 config = SecurityConfig(
     enable_rate_limiting=True,
-    rate_limit=120,
-    rate_limit_window=60,
+    rate_limit=10, # TODO: check rate limits in real usage
+    rate_limit_window=3, # TODO: check rate limits in real usage
     enable_redis=False,
     enable_ip_banning=True,
-    auto_ban_threshold=3,
-    auto_ban_duration=3600,
     custom_log_file="security.log",
+
+    enable_penetration_detection=True,
+    auto_ban_threshold=3, 
+    auto_ban_duration=3600, 
+
+    detection_compiler_timeout=2.0, 
+    detection_max_content_length=10000, 
+    detection_preserve_attack_patterns=True, 
+    detection_semantic_threshold=0.7,  
+
+    detection_anomaly_threshold=3.0,
+    detection_slow_pattern_threshold=0.1, 
+    detection_monitor_history_size=1000, 
+    detection_max_tracked_patterns=1000,  
 )
+guard_deco = SecurityDecorator(config)
 
 app.add_middleware(SecurityMiddleware, config=config)
+app.state.guard_decorator = guard_deco
 mongo_worker = MongoWorker()
 _rabbit_worker: Optional[RabbitWorker] = None
 
@@ -93,6 +107,7 @@ async def get_user(
 
 
 @app.post("/add_user", status_code=201)
+@guard_deco.rate_limit(requests=3, window=60)
 async def add_user(
     new_user: AddUserBody,
     response: Response,
@@ -122,7 +137,9 @@ async def get_card(
     return BaseResponse(result="There is no card with this card_id", error=True)
 
 
+
 @app.get("/get_random_cards", status_code=200)
+@guard_deco.rate_limit(requests=5, window=60)
 async def get_random_cards(
     user_id: int,
     response: Response,
@@ -132,8 +149,6 @@ async def get_random_cards(
     if cards_visited.error:
         response.status_code = status.HTTP_404_NOT_FOUND
         return cards_visited
-
-    # Передаём exclude_ids напрямую в запрос — один round-trip к БД вместо цикла
     exclude_ids = cards_visited.result.cards_visited or None
     random_cards = await mongo.get_random_cards(10, True, exclude_ids=exclude_ids)
 
@@ -145,14 +160,13 @@ async def get_random_cards(
 
 
 @app.post("/add_card", status_code=201)
+@guard_deco.rate_limit(requests=3, window=60)
 async def add_card(
     new_card: AddCardBody,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
     if moderate_text(new_card.choice_A) and moderate_text(new_card.choice_B):
         card = await mongo.add_card_by_api(new_card.choice_A, new_card.choice_B, new_card.author_id)
-
-        # Отправляем карточку в RabbitMQ на ручную модерацию админом
         try:
             await get_rabbit_worker().send_to_moderation(card)
         except Exception as exc:
@@ -168,7 +182,6 @@ async def card_accept(
     card_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    """Принимает карточку — доступ только с секретным ключом."""
     result = await mongo.accept_card(card_id)
     if result.error:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -180,7 +193,6 @@ async def card_reject(
     card_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    """Отклоняет карточку — доступ только с секретным ключом."""
     result = await mongo.reject_card(card_id)
     if result.error:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -234,6 +246,7 @@ async def dislike_card(
 
 
 @app.post("/comment", status_code=201)
+@guard_deco.rate_limit(requests=5, window=20)
 async def comment(
     comment_info: AddCommentBody,
     response: Response,
