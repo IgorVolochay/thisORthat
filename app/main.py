@@ -56,9 +56,11 @@ config = SecurityConfig(
 )
 guard_deco = SecurityDecorator(config)
 
+_security_middleware = SecurityMiddleware(app.router, config=config)
 app.add_middleware(SecurityMiddleware, config=config)
 app.add_middleware(RequestLoggingMiddleware)
 app.state.guard_decorator = guard_deco
+app.state._security_middleware = _security_middleware
 mongo_worker = MongoWorker()
 _rabbit_worker: Optional[RabbitWorker] = None
 

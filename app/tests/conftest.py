@@ -8,20 +8,6 @@ from guard import ip_ban_manager
 from guard_core.handlers.ratelimit_handler import RateLimitManager
 
 
-def _clear_middleware_suspicious_counts():
-    """Search for SecurityMiddleware in middleware stack and clear suspicious_request_counts."""
-    from guard.middleware import SecurityMiddleware
-    from main import app
-    current = getattr(app, 'middleware_stack', None) or app
-    visited = set()
-    while current is not None and id(current) not in visited:
-        visited.add(id(current))
-        if isinstance(current, SecurityMiddleware):
-            current.suspicious_request_counts.clear()
-            break
-        current = getattr(current, 'app', None)
-
-
 def _reset_all():
     """Full reset of rate-limiter, IP-ban, and suspicious counts."""
     # Rate limit timestamps
@@ -33,8 +19,14 @@ def _reset_all():
     ip_ban_manager.banned_ips.clear()
     ip_ban_manager.banned_networks.clear()
 
-    # Suspicious request counts
-    _clear_middleware_suspicious_counts()
+    # Suspicious request counts via direct reference stored in app.state
+    try:
+        from main import app
+        sm = getattr(app.state, '_security_middleware', None)
+        if sm is not None:
+            sm.suspicious_request_counts.clear()
+    except Exception:
+        pass
 
 
 @pytest.fixture(autouse=True)
