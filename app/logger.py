@@ -11,11 +11,17 @@ Usage:
     logger.info("message")
 """
 
+from __future__ import annotations
 import os
 import sys
 import logging
+from types import FrameType
+from typing import TYPE_CHECKING
 from dotenv import load_dotenv
 from loguru import logger
+
+if TYPE_CHECKING:
+    from loguru import Record
 
 
 def get_log_level() -> str:
@@ -27,12 +33,12 @@ def get_log_level() -> str:
 
 # ── Stdout / stderr filters ───────────────────────────────────────────────────
 
-def _stdout_filter(record: dict) -> bool:
+def _stdout_filter(record: Record) -> bool:
     """Pass DEBUG / INFO / WARNING to stdout."""
     return record["level"].no < logging.ERROR
 
 
-def _stderr_filter(record: dict) -> bool:
+def _stderr_filter(record: Record) -> bool:
     """Pass ERROR / CRITICAL to stderr."""
     return record["level"].no >= logging.ERROR
 
@@ -43,12 +49,14 @@ class InterceptHandler(logging.Handler):
     """Redirect all stdlib logging calls into Loguru."""
 
     def emit(self, record: logging.LogRecord) -> None:
+        level: str | int
         try:
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
 
-        frame, depth = sys._getframe(6), 6
+        frame: FrameType | None = sys._getframe(6)
+        depth = 6
         while frame and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1

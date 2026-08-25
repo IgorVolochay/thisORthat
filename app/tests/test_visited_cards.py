@@ -42,7 +42,7 @@ async def test_get_random_cards_valid():
         params = {"user_id": EXIST_USER}
         response = await client.get("/get_random_cards", params=params)
         print(f"\nINPUT: endpoint=/get_random_cards\nOUTPUT: status={response.status_code} | json={response.json()}")
-        if response.status_code == 404 and BaseResponse.model_validate(response.json()).result == "No active cards":
+        if response.status_code == 404 and "No active cards" in str(BaseResponse.model_validate(response.json()).result):
             global NO_ACTIVE_CARDS_STATUS
             NO_ACTIVE_CARDS_STATUS = True
             pytest.skip(reason="No active cards in MongoDB")
