@@ -16,7 +16,7 @@ ACTIVE_CARDS_LESS_THAN_TEN = False
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_add_new_user():
-    async with AsyncClient(transport=ASGITransport(app=app),
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)),
                            base_url='http://test') as client:
         end_point = "/add_user"
         data = {
@@ -38,7 +38,7 @@ async def test_add_new_user():
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_random_cards_valid():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         params = {"user_id": EXIST_USER}
         response = await client.get("/get_random_cards", params=params)
         print(f"\nINPUT: endpoint=/get_random_cards\nOUTPUT: status={response.status_code} | json={response.json()}")
@@ -68,7 +68,7 @@ async def test_get_random_cards_randomness():
     elif ACTIVE_CARDS_LESS_THAN_TEN:
         pytest.skip(reason="The number of active cards is less than 10 in MongoDB")
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         params = {"user_id": EXIST_USER}
         response1 = await client.get("/get_random_cards", params=params)
         response2 = await client.get("/get_random_cards", params=params)
@@ -93,7 +93,7 @@ async def test_get_random_cards_parallel_requests():
     elif ACTIVE_CARDS_LESS_THAN_TEN:
         pytest.skip(reason="The number of active cards is less than 10 in MongoDB")
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         params = {"user_id": EXIST_USER}
         tasks = [client.get("/get_random_cards", params=params) for _ in range(3)]
         responses = await asyncio.gather(*tasks)
