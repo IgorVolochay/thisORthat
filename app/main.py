@@ -1,6 +1,5 @@
 import os
 import secrets
-import logging
 
 import uvicorn
 import asyncio
@@ -16,9 +15,10 @@ from schemas.base_schemas import Card
 from mongo_worker import MongoWorker
 from rabbit_worker import RabbitWorker
 from tools.base_moderation import moderate_text
+from logger import logger, setup_logging
+from middleware import RequestLoggingMiddleware
 
-
-logger = logging.getLogger(__name__)
+setup_logging()
 load_dotenv()
 disable_docs = os.getenv("DISABLE_DOCS", "true").lower() == "true"
 
@@ -56,6 +56,7 @@ config = SecurityConfig(
 guard_deco = SecurityDecorator(config)
 
 app.add_middleware(SecurityMiddleware, config=config)
+app.add_middleware(RequestLoggingMiddleware)
 app.state.guard_decorator = guard_deco
 mongo_worker = MongoWorker()
 _rabbit_worker: Optional[RabbitWorker] = None
@@ -84,6 +85,7 @@ async def verify_moderation_secret(
 @app.on_event("startup")
 async def startup_event():
     await mongo_worker.create_indexes()
+    logger.info("Application started on :5000")
 
 
 @app.get("/check_user", status_code=200)
@@ -170,7 +172,7 @@ async def add_card(
         try:
             await get_rabbit_worker().send_to_moderation(card)
         except Exception as exc:
-            logger.error("Failed to send card %s to moderation queue: %s", card.card_id, exc)
+            logger.error("Failed to send card {} to moderation queue: {}", card.card_id, exc)
 
         return BaseResponse(result=card)
     response.status_code = status.HTTP_400_BAD_REQUEST
@@ -277,7 +279,7 @@ async def get_comments(
 
 
 async def main():
-    config = uvicorn.Config("main:app", host="0.0.0.0", port=5000, log_level="info")
+    config = uvicorn.Config("main:app", host="0.0.0.0", port=5000, log_level="warning")
     server = uvicorn.Server(config)
     await server.serve()
 

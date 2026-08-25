@@ -1,5 +1,4 @@
 import os
-import logging
 
 import motor.motor_asyncio
 
@@ -10,9 +9,7 @@ from pymongo import ReturnDocument
 
 from schemas.base_schemas import User, Visited, Card, Comment
 from schemas.api_schemas import BaseResponse
-
-
-logger = logging.getLogger(__name__)
+from logger import logger
 
 
 class MongoWorker:
@@ -25,7 +22,12 @@ class MongoWorker:
             password=os.getenv('MONGO_PASS'),
             serverSelectionTimeoutMS=5000,
             connectTimeoutMS=5000,
+            maxPoolSize=50,
+            minPoolSize=5,
+            maxIdleTimeMS=60000,
+            waitQueueTimeoutMS=5000
         )
+        logger.info("MongoDB connection established.")
         self.db = self.client["data"]
         self.users_data = self.db["users"]
         self.visited_data = self.db["visited"]
@@ -58,6 +60,7 @@ class MongoWorker:
             registration_date=datetime.now().isoformat(),
         )
         await self.users_data.insert_one(new_user.model_dump())
+        logger.debug("User added: user_id={}, username={}", user_id, username)
         return new_user
 
     async def get_user(self, user_id: int) -> User:
@@ -130,6 +133,7 @@ class MongoWorker:
             creation_date=datetime.now().isoformat(),
         )
         await self.game_data.insert_one(new_card.model_dump())
+        logger.debug("Card created by API: card_id={}, author_id={}", new_card.card_id, author_id)
         return new_card
 
     async def add_card_by_base_model(self, new_card: Card) -> Optional[Card]:
@@ -138,7 +142,7 @@ class MongoWorker:
             await self.game_data.insert_one(new_card.model_dump())
             return new_card
         except Exception as exc:
-            logger.error("Failed to insert card: %s", exc)
+            logger.error("Failed to insert card: {}", exc)
             raise
 
     async def accept_card(self, card_id: int) -> BaseResponse:
@@ -152,14 +156,18 @@ class MongoWorker:
             return_document=ReturnDocument.AFTER,
         )
         if not result:
+            logger.debug("Attempted to accept non-existent card: card_id={}", card_id)
             return BaseResponse(result="Card doesn't exist", error=True)
+        logger.debug("Card accepted: card_id={}", card_id)
         return BaseResponse(result=Card.model_validate(result))
 
     async def reject_card(self, card_id: int) -> BaseResponse:
         """Rejects a card: deletes it from the database."""
         result = await self.game_data.delete_one({"card_id": card_id})
         if result.deleted_count == 0:
+            logger.debug("Attempted to reject non-existent card: card_id={}", card_id)
             return BaseResponse(result="Card doesn't exist", error=True)
+        logger.debug("Card rejected and deleted: card_id={}", card_id)
         return BaseResponse(result=f"Card {card_id} rejected and deleted")
 
     async def select_choice(self, card_id: int, choice: str) -> BaseResponse:
@@ -206,6 +214,7 @@ class MongoWorker:
             {"user_id": user_id},
             {"$push": {"liked_card_ids": card_id}},
         )
+        logger.debug("Card liked: card_id={}, user_id={}", card_id, user_id)
         return BaseResponse(result=True, error=False)
 
     async def dislike_card(self, card_id: int, user_id: int) -> BaseResponse:
@@ -227,6 +236,7 @@ class MongoWorker:
             {"user_id": user_id},
             {"$push": {"disliked_card_ids": card_id}},
         )
+        logger.debug("Card disliked: card_id={}, user_id={}", card_id, user_id)
         return BaseResponse(result=True, error=False)
 
 
@@ -253,6 +263,7 @@ class MongoWorker:
         if not updated_user:
             return BaseResponse(result="Difficulty adding comment_id to user", error=True)
 
+        logger.debug("Comment added: comment_id={}, card_id={}, author_id={}", new_comment.comment_id, card_id, user_id)
         return BaseResponse(result=new_comment)
 
     async def get_comments(self, card_id: int) -> BaseResponse:

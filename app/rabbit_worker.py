@@ -1,7 +1,6 @@
 import os
 import json
 import asyncio
-import logging
 from typing import Callable, Awaitable
 
 import aio_pika
@@ -9,9 +8,7 @@ from aio_pika.abc import AbstractIncomingMessage
 from dotenv import load_dotenv
 
 from schemas.base_schemas import Card
-
-
-logger = logging.getLogger(__name__)
+from logger import logger
 
 
 class RabbitWorker:
@@ -20,9 +17,11 @@ class RabbitWorker:
         self.url = (
             f"amqp://{os.getenv('RABBIT_USER')}:{os.getenv('RABBIT_PASS')}"
             f"@{os.getenv('RABBIT_HOST')}:{os.getenv('RABBIT_PORT')}"
-        )   
+        )
+        logger.info("RabbitWorker connection established.")
 
     async def send_to_moderation(self, card: Card) -> None:
+        logger.debug("Preparing to send card {} to moderation queue...", card.card_id)
         connection = await aio_pika.connect_robust(self.url)
         async with connection:
             channel = await connection.channel()
@@ -34,7 +33,8 @@ class RabbitWorker:
                 ),
                 routing_key="moderation",
             )
-            logger.info("Card %s sent to moderation queue", card.card_id)
+            logger.debug("Card {} successfully published to moderation queue", card.card_id)
+            logger.info("Card {} sent to moderation queue", card.card_id)
 
     async def consume_moderation(
         self,
@@ -55,7 +55,7 @@ class RabbitWorker:
                         card = Card.model_validate(card_data)
                         await callback(card)
                     except Exception as exc:
-                        logger.error("Error processing moderation message: %s", exc)
+                        logger.error("Error processing moderation message: {}", exc)
 
             await queue.consume(on_message)
 

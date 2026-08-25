@@ -11,7 +11,6 @@ When a button is pressed, the bot calls protected endpoints
 import os
 import json
 import asyncio
-import logging
 from datetime import datetime
 
 import aiohttp
@@ -21,18 +20,17 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 
 from schemas.base_schemas import Card
 from rabbit_worker import RabbitWorker
+from logger import logger, setup_logging
 
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+setup_logging()
 
 # ── Configuration ──────────────────────────────────────────────
 BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 ADMIN_CHAT_ID = int(os.getenv("TG_ADMIN_CHAT_ID", "0"))
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000")
 MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
-
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 rabbit = RabbitWorker()
@@ -52,7 +50,7 @@ async def _get_author_username(author_id: int) -> str:
                     if username:
                         return f"@{username}"
     except Exception as exc:
-        logger.warning("Failed to fetch username for %s: %s", author_id, exc)
+        logger.warning("Failed to fetch username for {}: {}", author_id, exc)
     return str(author_id)
 
 
@@ -97,7 +95,7 @@ async def send_card_to_admin(card: Card) -> None:
         reply_markup=keyboard,
         parse_mode="HTML",
     )
-    logger.info("Sent card %s to admin chat", card.card_id)
+    logger.info("Sent card {} to admin chat", card.card_id)
 
 
 # ── Calling protected API endpoints ──────────────────────────
@@ -131,7 +129,7 @@ async def on_accept(callback: CallbackQuery) -> None:
         parse_mode="HTML",
     )
     await callback.answer("Карточка принята!")
-    logger.info("Card %s accepted by admin", card_id)
+    logger.info("Card {} accepted by admin", card_id)
 
 
 @dp.callback_query(F.data.startswith("reject:"))
@@ -148,7 +146,7 @@ async def on_reject(callback: CallbackQuery) -> None:
         parse_mode="HTML",
     )
     await callback.answer("Карточка отклонена!")
-    logger.info("Card %s rejected by admin", card_id)
+    logger.info("Card {} rejected by admin", card_id)
 
 # ── aiogram Lifecycle hooks ────────────────────────────────────
 _rabbit_task: asyncio.Task | None = None
