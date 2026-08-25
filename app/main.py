@@ -96,7 +96,6 @@ async def check_user(
     result = await mongo.check_user(user_id)
     return BaseResponse(result=result)
 
-
 @app.get("/get_user", status_code=200)
 async def get_user(
     user_id: int,
@@ -107,7 +106,6 @@ async def get_user(
         return BaseResponse(result=result)
     response.status_code = status.HTTP_404_NOT_FOUND
     return BaseResponse(result="User doesn't exist", error=True)
-
 
 @app.post("/add_user", status_code=201)
 @guard_deco.rate_limit(requests=3, window=60)
@@ -139,8 +137,6 @@ async def get_card(
     response.status_code = status.HTTP_404_NOT_FOUND
     return BaseResponse(result="There is no card with this card_id", error=True)
 
-
-
 @app.get("/get_random_cards", status_code=200)
 @guard_deco.rate_limit(requests=5, window=60)
 async def get_random_cards(
@@ -161,7 +157,6 @@ async def get_random_cards(
 
     return BaseResponse(result=random_cards)
 
-
 @app.post("/add_card", status_code=201)
 @guard_deco.rate_limit(requests=3, window=60)
 async def add_card(
@@ -179,7 +174,6 @@ async def add_card(
     response.status_code = status.HTTP_400_BAD_REQUEST
     return BaseResponse(result="Card has not passed base moderation", error=True)
 
-
 @app.patch("/card_accept", status_code=200, dependencies=[Depends(verify_moderation_secret)])
 async def card_accept(
     card_id: int,
@@ -190,7 +184,6 @@ async def card_accept(
         response.status_code = status.HTTP_404_NOT_FOUND
     return result
 
-
 @app.patch("/card_reject", status_code=200, dependencies=[Depends(verify_moderation_secret)])
 async def card_reject(
     card_id: int,
@@ -200,7 +193,6 @@ async def card_reject(
     if result.error:
         response.status_code = status.HTTP_404_NOT_FOUND
     return result
-
 
 @app.patch("/select_choice", status_code=200)
 async def select_choice(
@@ -235,7 +227,6 @@ async def like_card(
     response.status_code = status.HTTP_404_NOT_FOUND
     return result
 
-
 @app.patch("/dislike_card", status_code=200)
 async def dislike_card(
     dislike_data: ReactionCard,
@@ -246,7 +237,6 @@ async def dislike_card(
         return BaseResponse(result="Added dislike to card")
     response.status_code = status.HTTP_404_NOT_FOUND
     return result
-
 
 @app.post("/comment", status_code=201)
 @guard_deco.rate_limit(requests=5, window=20)
