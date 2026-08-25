@@ -16,7 +16,7 @@ from datetime import datetime
 import aiohttp
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from schemas.base_schemas import Card
 from rabbit_worker import RabbitWorker
@@ -27,7 +27,7 @@ load_dotenv()
 setup_logging()
 
 # ── Configuration ──────────────────────────────────────────────
-BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
+BOT_TOKEN = os.getenv("TG_BOT_TOKEN") or ""
 ADMIN_CHAT_ID = int(os.getenv("TG_ADMIN_CHAT_ID", "0"))
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000")
 MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
@@ -117,6 +117,9 @@ async def call_moderation_api(action: str, card_id: int) -> dict:
 # ── Callback button handlers ───────────────────────────────
 @dp.callback_query(F.data.startswith("accept:"))
 async def on_accept(callback: CallbackQuery) -> None:
+    if not callback.data or not isinstance(callback.message, Message):
+        return
+
     card_id = int(callback.data.split(":")[1])
     result = await call_moderation_api("accept", card_id)
 
@@ -124,8 +127,9 @@ async def on_accept(callback: CallbackQuery) -> None:
         await callback.answer(f"Ошибка: {result['result']}", show_alert=True)
         return
 
+    orig_text = callback.message.text or ""
     await callback.message.edit_text(
-        callback.message.text + "\n\n✅ <b>ПРИНЯТА</b>",
+        orig_text + "\n\n✅ <b>ПРИНЯТА</b>",
         parse_mode="HTML",
     )
     await callback.answer("Карточка принята!")
@@ -134,6 +138,9 @@ async def on_accept(callback: CallbackQuery) -> None:
 
 @dp.callback_query(F.data.startswith("reject:"))
 async def on_reject(callback: CallbackQuery) -> None:
+    if not callback.data or not isinstance(callback.message, Message):
+        return
+
     card_id = int(callback.data.split(":")[1])
     result = await call_moderation_api("reject", card_id)
 
@@ -141,8 +148,9 @@ async def on_reject(callback: CallbackQuery) -> None:
         await callback.answer(f"Ошибка: {result['result']}", show_alert=True)
         return
 
+    orig_text = callback.message.text or ""
     await callback.message.edit_text(
-        callback.message.text + "\n\n❌ <b>ОТКЛОНЕНА</b>",
+        orig_text + "\n\n❌ <b>ОТКЛОНЕНА</b>",
         parse_mode="HTML",
     )
     await callback.answer("Карточка отклонена!")
