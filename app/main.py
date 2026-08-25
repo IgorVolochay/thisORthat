@@ -18,6 +18,7 @@ from tools.base_moderation import moderate_text
 from logger import logger, setup_logging
 from middleware import RequestLoggingMiddleware
 
+
 setup_logging()
 load_dotenv()
 disable_docs = os.getenv("DISABLE_DOCS", "true").lower() == "true"
@@ -34,7 +35,7 @@ app: FastAPI = FastAPI(
 config = SecurityConfig(
     enable_rate_limiting=True,
     rate_limit=10, # TODO: check rate limits in real usage
-    rate_limit_window=3, # TODO: check rate limits in real usage
+    rate_limit_window=1, # TODO: check rate limits in real usage
     enable_redis=False,
     enable_ip_banning=True,
     custom_log_file="security.log",
