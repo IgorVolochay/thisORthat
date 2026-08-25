@@ -12,7 +12,7 @@ def _clear_middleware_suspicious_counts():
     """Search for SecurityMiddleware in middleware stack and clear suspicious_request_counts."""
     from guard.middleware import SecurityMiddleware
     from main import app
-    current = app
+    current = getattr(app, 'middleware_stack', None) or app
     visited = set()
     while current is not None and id(current) not in visited:
         visited.add(id(current))
