@@ -62,12 +62,12 @@ jobs:
         run: |
           docker run -d --name mongodb \
             -p 27017:27017 \
-            -e MONGO_INITDB_ROOT_USERNAME=$MONGO_USER \
-            -e MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASS \
+            -e "MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}" \
+            -e "MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS}" \
             mongodb/mongodb-community-server
           for i in $(seq 1 30); do
             docker exec mongodb mongosh \
-              --username $MONGO_USER --password $MONGO_PASS \
+              --username "${MONGO_USER}" --password "${MONGO_PASS}" \
               --eval "db.runCommand({ping:1})" && break
             sleep 1
           done
@@ -75,9 +75,9 @@ jobs:
       - name: Start RabbitMQ
         run: |
           docker run -d --name rabbitmq \
-            -p ${{ secrets.RABBIT_PORT }}:5672 \
-            -e RABBITMQ_DEFAULT_USER=${{ secrets.RABBIT_USER }} \
-            -e RABBITMQ_DEFAULT_PASS=${{ secrets.RABBIT_PASS }} \
+            -p "${RABBIT_PORT}:5672" \
+            -e "RABBITMQ_DEFAULT_USER=${RABBIT_USER}" \
+            -e "RABBITMQ_DEFAULT_PASS=${RABBIT_PASS}" \
             rabbitmq:3.13-alpine
           for i in $(seq 1 30); do
             docker exec rabbitmq rabbitmq-diagnostics -q ping && break
