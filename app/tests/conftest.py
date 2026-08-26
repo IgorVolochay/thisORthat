@@ -20,11 +20,15 @@ def _reset_all():
     ip_ban_manager.banned_networks.clear()
 
     # Suspicious request counts via direct reference stored in app.state
+    # Because FastAPI's add_middleware creates a new instance internally,
+    # navigating app.state or app.middleware_stack is unreliable.
+    # We use gc to robustly find the active SecurityMiddleware instance(s) and clear them.
     try:
-        from main import app
-        sm = getattr(app.state, '_security_middleware', None)
-        if sm is not None:
-            sm.suspicious_request_counts.clear()
+        import gc
+        from guard.middleware import SecurityMiddleware
+        for obj in gc.get_objects():
+            if isinstance(obj, SecurityMiddleware):
+                obj.suspicious_request_counts.clear()
     except Exception:
         pass
 
