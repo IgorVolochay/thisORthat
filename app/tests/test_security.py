@@ -351,7 +351,7 @@ class TestAutoIPBan:
         After auto_ban_threshold (3) suspicious requests, the IP should be banned.
         Subsequent requests (even legitimate ones) should return 403.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
             # Send suspicious requests sequentially (SQL injection variants)
             injection_payloads = [
                 "1' OR '1'='1",
@@ -387,7 +387,7 @@ class TestAutoIPBan:
         """
         If IP is banned, all endpoints should return 403.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
             # Send various attacks to guarantee hitting the threshold
             attacks = [
                 "1' OR '1'='1; --",
@@ -425,7 +425,7 @@ class TestAutoIPBan:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_banned_ip_message(self):
         """Banned IP should receive 'IP address banned' message."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
             attacks = [
                 "1' OR '1'='1; --",
                 "1; DROP TABLE cards; --",
@@ -454,7 +454,7 @@ class TestSuspiciousHeaders:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_suspicious_user_agent(self):
         """Request with suspicious User-Agent may be blocked."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
             resp = await client.get(
                 "/check_user",
                 params={"user_id": 1},
@@ -470,7 +470,7 @@ class TestSuspiciousHeaders:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_xss_in_headers(self):
         """XSS attack via custom headers."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
             resp = await client.get(
                 "/check_user",
                 params={"user_id": 1},
