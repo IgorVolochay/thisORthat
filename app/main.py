@@ -47,7 +47,7 @@ config = SecurityConfig(
     detection_compiler_timeout=2.0, 
     detection_max_content_length=10000, 
     detection_preserve_attack_patterns=True, 
-    detection_semantic_threshold=0.7,  
+    detection_semantic_threshold=0.7,
 
     detection_anomaly_threshold=3.0,
     detection_slow_pattern_threshold=0.1, 
@@ -201,11 +201,17 @@ async def select_choice(
     choice_data: SelectChoice,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    check_visited = await mongo.get_visited_cards(choice_data.user_id)
-    if check_visited.error:
+    # Verify that the user exists before proceeding.
+    if not await mongo.check_user(choice_data.user_id):
         response.status_code = status.HTTP_404_NOT_FOUND
-        return check_visited
-    if choice_data.card_id in check_visited.result.cards_visited:
+        return BaseResponse(result="User doesn't exist", error=True)
+
+    # Atomically mark the card as visited.
+    # try_mark_visited uses a conditional MongoDB filter ($ne) so that only one
+    # concurrent request can "win" — eliminating the TOCTOU race condition where
+    # two parallel requests both pass the visited-check before either writes.
+    newly_visited = await mongo.try_mark_visited(choice_data.user_id, choice_data.card_id)
+    if not newly_visited:
         response.status_code = status.HTTP_403_FORBIDDEN
         return BaseResponse(result="Card already visited!", error=True)
 
@@ -214,7 +220,6 @@ async def select_choice(
         response.status_code = status.HTTP_404_NOT_FOUND
         return select_choice_result
 
-    await mongo.update_visited_cards(choice_data.user_id, choice_data.card_id)
     return BaseResponse(result="Select choice complete!")
 
 

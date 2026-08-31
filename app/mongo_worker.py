@@ -96,6 +96,39 @@ class MongoWorker:
         )
         return Visited.model_validate(updated)
 
+    async def try_mark_visited(self, user_id: int, card_id: int) -> bool:
+        """
+        Atomically marks a card as visited for the user.
+
+        Returns True if the card was newly marked (was not visited before).
+        Returns False if the card was already in the visited set.
+
+        Uses a conditional update filter (cards_visited: {$ne: card_id}) so that
+        only one concurrent request can "win" the mark — eliminating the TOCTOU
+        race condition between checking and writing.
+        """
+        result = await self.visited_data.update_one(
+            {"user_id": user_id, "cards_visited": {"$ne": card_id}},
+            {"$addToSet": {"cards_visited": card_id}},
+        )
+        if result.modified_count == 1:
+            return True
+
+        # No document matched: either the visited doc doesn't exist yet,
+        # or the card is already in the set.
+        doc = await self.visited_data.find_one({"user_id": user_id}, {"cards_visited": 1})
+        if doc is None:
+            # First vote ever for this user — create the visited document.
+            await self.visited_data.update_one(
+                {"user_id": user_id},
+                {"$addToSet": {"cards_visited": card_id}},
+                upsert=True,
+            )
+            return True
+
+        # Card is already present in the visited set.
+        return False
+
 
     async def get_card(self, card_id: int) -> Optional[Card]:
         document = await self.game_data.find_one({"card_id": card_id})
@@ -187,33 +220,38 @@ class MongoWorker:
         return BaseResponse(result=True, error=False)
 
 
-    async def check_user_reactions(self, user_id: int, card_id: int) -> BaseResponse:
-        user_info: User = await self.get_user(user_id)
-        if card_id in user_info.liked_card_ids:
-            return BaseResponse(result="Card already liked", error=True)
-        if card_id in user_info.disliked_card_ids:
-            return BaseResponse(result="Card already disliked", error=True)
-        return BaseResponse(result="No reactions", error=False)
-
     async def like_card(self, card_id: int, user_id: int) -> BaseResponse:
         if not await self.check_user(user_id):
             return BaseResponse(result="User doesn't exist", error=True)
 
-        user_reaction = await self.check_user_reactions(user_id, card_id)
-        if user_reaction.error:
-            return user_reaction
+        # Atomically add card_id to liked_card_ids ONLY IF it is not already
+        # present in liked_card_ids OR disliked_card_ids.
+        # Using a conditional filter makes this a single, race-condition-free
+        # test-and-set: if modified_count == 0, another request already won.
+        user_update = await self.users_data.find_one_and_update(
+            {
+                "user_id": user_id,
+                "liked_card_ids": {"$ne": card_id},
+                "disliked_card_ids": {"$ne": card_id},
+            },
+            {"$addToSet": {"liked_card_ids": card_id}},
+            projection={"_id": 1},
+        )
+        if not user_update:
+            return BaseResponse(result="Card already liked or disliked", error=True)
 
         updated_card = await self.game_data.find_one_and_update(
             {"card_id": card_id},
             {"$inc": {"count_likes": 1}},
         )
         if not updated_card:
+            # Card doesn't exist — roll back the user update (best effort).
+            await self.users_data.update_one(
+                {"user_id": user_id},
+                {"$pull": {"liked_card_ids": card_id}},
+            )
             return BaseResponse(result="Card doesn't exist", error=True)
 
-        await self.users_data.update_one(
-            {"user_id": user_id},
-            {"$push": {"liked_card_ids": card_id}},
-        )
         logger.debug("Card liked: card_id={}, user_id={}", card_id, user_id)
         return BaseResponse(result=True, error=False)
 
@@ -221,21 +259,31 @@ class MongoWorker:
         if not await self.check_user(user_id):
             return BaseResponse(result="User doesn't exist", error=True)
 
-        user_reaction = await self.check_user_reactions(user_id, card_id)
-        if user_reaction.error:
-            return user_reaction
+        # Same atomic test-and-set pattern as like_card.
+        user_update = await self.users_data.find_one_and_update(
+            {
+                "user_id": user_id,
+                "liked_card_ids": {"$ne": card_id},
+                "disliked_card_ids": {"$ne": card_id},
+            },
+            {"$addToSet": {"disliked_card_ids": card_id}},
+            projection={"_id": 1},
+        )
+        if not user_update:
+            return BaseResponse(result="Card already liked or disliked", error=True)
 
         updated_card = await self.game_data.find_one_and_update(
             {"card_id": card_id},
             {"$inc": {"count_dislikes": 1}},
         )
         if not updated_card:
+            # Card doesn't exist — roll back the user update (best effort).
+            await self.users_data.update_one(
+                {"user_id": user_id},
+                {"$pull": {"disliked_card_ids": card_id}},
+            )
             return BaseResponse(result="Card doesn't exist", error=True)
 
-        await self.users_data.update_one(
-            {"user_id": user_id},
-            {"$push": {"disliked_card_ids": card_id}},
-        )
         logger.debug("Card disliked: card_id={}, user_id={}", card_id, user_id)
         return BaseResponse(result=True, error=False)
 
@@ -267,6 +315,8 @@ class MongoWorker:
         return BaseResponse(result=new_comment)
 
     async def get_comments(self, card_id: int) -> BaseResponse:
+        if not await self.get_card(card_id):
+            return BaseResponse(result="Card doesn't exist", error=True)
         comments = await self.comments_data.find({"card_id": card_id}).sort("creation_date", -1).to_list(length=None)
         comments = [Comment.model_validate(comment) for comment in comments]
         return BaseResponse(result=comments)
