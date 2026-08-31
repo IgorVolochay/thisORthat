@@ -1,6 +1,6 @@
 services:
   mongodb:
-    image: mongodb/mongodb-community-server
+    image: mongo
     container_name: tort-mongodb
     restart: always
     environment:
@@ -56,7 +56,7 @@ services:
       RABBIT_USER: ${RABBIT_USER}
       RABBIT_PASS: ${RABBIT_PASS}
       MODERATION_SECRET: ${MODERATION_SECRET}
-      DISABLE_DOCS: ${DISABLE_DOCS:-true}
+      DEV_MODE: ${DEV_MODE:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "127.0.0.1:5000:5000"

@@ -17,20 +17,20 @@ from rabbit_worker import RabbitWorker
 from tools.base_moderation import moderate_text
 from logger import logger, setup_logging
 from middleware import RequestLoggingMiddleware
+from tg_auth import get_current_user_id, DEV_MODE
 
 
 setup_logging()
 load_dotenv()
-disable_docs = os.getenv("DISABLE_DOCS", "true").lower() == "true"
 
 app: FastAPI = FastAPI(
     title="This OR That",
     summary="OpenAPI schema for \"This OR That\" project!",
     version="0.1",
     contact={"GitHub": "https://github.com/IgorVolochay/thisORthat"},
-    docs_url=None if disable_docs else "/docs",
-    redoc_url=None if disable_docs else "/redoc",
-    openapi_url=None if disable_docs else "/openapi.json",
+    docs_url="/docs" if DEV_MODE else None,
+    redoc_url="/redoc" if DEV_MODE else None,
+    openapi_url="/openapi.json" if DEV_MODE else None,
 )
 config = SecurityConfig(
     enable_rate_limiting=True,
@@ -38,7 +38,6 @@ config = SecurityConfig(
     rate_limit_window=3, # TODO: check rate limits in real usage
     enable_redis=False,
     enable_ip_banning=True,
-    custom_log_file="security.log",
 
     enable_penetration_detection=True,
     auto_ban_threshold=3, 
@@ -88,6 +87,8 @@ async def verify_moderation_secret(
 @app.on_event("startup")
 async def startup_event():
     await mongo_worker.create_indexes()
+    if DEV_MODE:
+        logger.warning("⚠️ DEV_MODE is enabled — docs are exposed and Telegram initData auth is DISABLED")
     logger.info("Application started on :5000")
 
 
@@ -114,10 +115,14 @@ async def get_user(
 async def add_user(
     new_user: AddUserBody,
     response: Response,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    if not await mongo.check_user(new_user.user_id):
+    user_id = auth_user_id if auth_user_id is not None else new_user.user_id
+    if user_id is None:
+        raise HTTPException(status_code=422, detail="user_id is required")
+    if not await mongo.check_user(user_id):
         result = await mongo.add_user(
-            new_user.user_id,
+            user_id,
             new_user.username,
             new_user.first_name,
             new_user.last_name,
@@ -142,10 +147,14 @@ async def get_card(
 @app.get("/get_random_cards", status_code=200)
 @guard_deco.rate_limit(requests=5, window=60)
 async def get_random_cards(
-    user_id: int,
     response: Response,
+    user_id: Optional[int] = None,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    cards_visited = await mongo.get_visited_cards(user_id)
+    resolved_user_id = auth_user_id if auth_user_id is not None else user_id
+    if resolved_user_id is None:
+        raise HTTPException(status_code=422, detail="user_id is required")
+    cards_visited = await mongo.get_visited_cards(resolved_user_id)
 
     if cards_visited.error:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -164,9 +173,13 @@ async def get_random_cards(
 async def add_card(
     new_card: AddCardBody,
     response: Response,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    author_id = auth_user_id if auth_user_id is not None else new_card.author_id
+    if author_id is None:
+        raise HTTPException(status_code=422, detail="author_id is required")
     if moderate_text(new_card.choice_A) and moderate_text(new_card.choice_B):
-        card = await mongo.add_card_by_api(new_card.choice_A, new_card.choice_B, new_card.author_id)
+        card = await mongo.add_card_by_api(new_card.choice_A, new_card.choice_B, author_id)
         try:
             await get_rabbit_worker().send_to_moderation(card)
         except Exception as exc:
@@ -200,17 +213,18 @@ async def card_reject(
 async def select_choice(
     choice_data: SelectChoice,
     response: Response,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    user_id = auth_user_id if auth_user_id is not None else choice_data.user_id
+    if user_id is None:
+        raise HTTPException(status_code=422, detail="user_id is required")
     # Verify that the user exists before proceeding.
-    if not await mongo.check_user(choice_data.user_id):
+    if not await mongo.check_user(user_id):
         response.status_code = status.HTTP_404_NOT_FOUND
         return BaseResponse(result="User doesn't exist", error=True)
 
     # Atomically mark the card as visited.
-    # try_mark_visited uses a conditional MongoDB filter ($ne) so that only one
-    # concurrent request can "win" — eliminating the TOCTOU race condition where
-    # two parallel requests both pass the visited-check before either writes.
-    newly_visited = await mongo.try_mark_visited(choice_data.user_id, choice_data.card_id)
+    newly_visited = await mongo.try_mark_visited(user_id, choice_data.card_id)
     if not newly_visited:
         response.status_code = status.HTTP_403_FORBIDDEN
         return BaseResponse(result="Card already visited!", error=True)
@@ -227,8 +241,12 @@ async def select_choice(
 async def like_card(
     like_data: ReactionCard,
     response: Response,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    result = await mongo.like_card(like_data.card_id, like_data.user_id)
+    user_id = auth_user_id if auth_user_id is not None else like_data.user_id
+    if user_id is None:
+        raise HTTPException(status_code=422, detail="user_id is required")
+    result = await mongo.like_card(like_data.card_id, user_id)
     if not result.error and result.result:
         return BaseResponse(result="Added like to card")
     response.status_code = status.HTTP_404_NOT_FOUND
@@ -238,8 +256,12 @@ async def like_card(
 async def dislike_card(
     dislike_data: ReactionCard,
     response: Response,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
-    result = await mongo.dislike_card(dislike_data.card_id, dislike_data.user_id)
+    user_id = auth_user_id if auth_user_id is not None else dislike_data.user_id
+    if user_id is None:
+        raise HTTPException(status_code=422, detail="user_id is required")
+    result = await mongo.dislike_card(dislike_data.card_id, user_id)
     if not result.error and result.result:
         return BaseResponse(result="Added dislike to card")
     response.status_code = status.HTTP_404_NOT_FOUND
@@ -250,12 +272,16 @@ async def dislike_card(
 async def comment(
     comment_info: AddCommentBody,
     response: Response,
+    auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    author_id = auth_user_id if auth_user_id is not None else comment_info.author_id
+    if author_id is None:
+        raise HTTPException(status_code=422, detail="author_id is required")
     if not moderate_text(comment_info.comment_text):
         response.status_code = status.HTTP_400_BAD_REQUEST
         return BaseResponse(result="Comment has not passed base moderation", error=True)
 
-    result = await mongo.add_comment(comment_info.author_id, comment_info.card_id, comment_info.comment_text)
+    result = await mongo.add_comment(author_id, comment_info.card_id, comment_info.comment_text)
     if result.error and result.result in ["User doesn't exist", "Card doesn't exist"]:
         response.status_code = status.HTTP_404_NOT_FOUND
         return result
