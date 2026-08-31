@@ -16,7 +16,8 @@ from fastapi import HTTPException
 
 from tg_auth import validate_init_data
 
-BOT_TOKEN = "7765587867:AAHYpUR_XHEZ1YjCKCAgjWaOiepeDY4XtPA"
+import os
+BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "test:mock_token_for_testing_12345")
 
 
 def _build_init_data(
