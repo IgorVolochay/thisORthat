@@ -22,6 +22,9 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 
 
+# Client IP and port
+CLIENT = ("7.214.201.94", 50000) 
+
 # ========================================================================
 #  RATE LIMIT TESTS
 # ========================================================================
@@ -33,7 +36,7 @@ class TestGlobalRateLimit:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_global_rate_limit_allows_under_threshold(self):
         """Requests within the limit (<=10) should pass."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             for i in range(9):
                 resp = await client.get("/check_user", params={"user_id": 1})
                 assert resp.status_code == 200, (
@@ -46,7 +49,7 @@ class TestGlobalRateLimit:
         After exceeding global limit (10 requests/3s) -> 429.
         /check_user does not have a rate_limit decorator, so only global limit applies.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             # Send 10 requests (fill the limit)
             for i in range(10):
                 await client.get("/check_user", params={"user_id": 1})
@@ -61,7 +64,7 @@ class TestGlobalRateLimit:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_global_rate_limit_response_format(self):
         """Verify response format on rate limit."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             # Exhaust limit
             for _ in range(10):
                 await client.get("/check_user", params={"user_id": 1})
@@ -81,7 +84,7 @@ class TestDecoratorRateLimit:
         First 3 requests pass (422 due to invalid data is OK, main point is not 429).
         4th request -> 429.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             data = {
                 "user_id": random.randint(100000000, 999999999),
                 "username": "RateTest",
@@ -108,7 +111,7 @@ class TestDecoratorRateLimit:
         """
         /add_card: limit 3 requests / 60 sec.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             author_id = random.randint(100000000, 999999999)
             for i in range(3):
                 payload = {
@@ -136,7 +139,7 @@ class TestDecoratorRateLimit:
         """
         /get_random_cards: limit 5 requests / 60 sec.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             user_id = random.randint(100000000, 999999999)
 
             for i in range(5):
@@ -156,7 +159,7 @@ class TestDecoratorRateLimit:
         """
         /comment: limit 5 requests / 20 sec.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             for i in range(5):
                 payload = {
                     "author_id": random.randint(100000000, 999999999),
@@ -185,7 +188,7 @@ class TestDecoratorRateLimit:
         Decorator rate limit is tracked separately for each endpoint.
         Requests to /check_user should not affect /add_card limit.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             # 5 requests to /check_user (no decorator, but global limit 10/3s)
             for _ in range(5):
                 await client.get("/check_user", params={"user_id": 1})
@@ -211,7 +214,7 @@ class TestRateLimitParallel:
         Multiple parallel requests should lead to 429 for some of them.
         Send 15 parallel requests with global limit of 10/3s.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             tasks = [
                 client.get("/check_user", params={"user_id": 1})
                 for _ in range(15)
@@ -247,7 +250,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_sql_injection_detected(self):
         """SQL injection in query parameters should be detected."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get(
                 "/get_card",
                 params={"card_id": "1 OR 1=1; DROP TABLE users;--"}
@@ -261,7 +264,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_xss_in_query_params_detected(self):
         """XSS attack in query parameters should be detected."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get(
                 "/get_card",
                 params={"card_id": "<script>alert('XSS')</script>"}
@@ -274,7 +277,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_path_traversal_detected(self):
         """Path traversal attack should be detected."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get("/get_card/../../../etc/passwd")
             print(f"\nPath traversal test: status={resp.status_code} | text={resp.text[:200]}")
             # Can be 400, 403, 404, or 422 — but MUST NOT expose file contents
@@ -285,7 +288,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_xss_in_post_body_detected(self):
         """XSS attack in POST body should be detected."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             payload = {
                 "choice_A": "<script>document.cookie</script>",
                 "choice_B": "Normal option",
@@ -301,7 +304,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_command_injection_detected(self):
         """Command injection attempt should be detected."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             payload = {
                 "choice_A": "; cat /etc/passwd; echo",
                 "choice_B": "$(whoami)",
@@ -317,7 +320,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_sql_union_injection_detected(self):
         """UNION-based SQL injection should be detected."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get(
                 "/get_card",
                 params={"card_id": "1 UNION SELECT password FROM users"}
@@ -330,7 +333,7 @@ class TestPenetrationDetection:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_legitimate_request_not_blocked(self):
         """Legitimate request with normal data should not be blocked as suspicious."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get("/get_card", params={"card_id": 1})
             print(f"\nLegitimate request test: status={resp.status_code}")
             # 200 (card found) or 404 (not found) — but not 400/403
@@ -351,7 +354,7 @@ class TestAutoIPBan:
         After auto_ban_threshold (3) suspicious requests, the IP should be banned.
         Subsequent requests (even legitimate ones) should return 403.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             # Send suspicious requests sequentially (SQL injection variants)
             injection_payloads = [
                 "1' OR '1'='1",
@@ -387,7 +390,7 @@ class TestAutoIPBan:
         """
         If IP is banned, all endpoints should return 403.
         """
-        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             # Send various attacks to guarantee hitting the threshold
             attacks = [
                 "1' OR '1'='1; --",
@@ -425,7 +428,7 @@ class TestAutoIPBan:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_banned_ip_message(self):
         """Banned IP should receive 'IP address banned' message."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             attacks = [
                 "1' OR '1'='1; --",
                 "1; DROP TABLE cards; --",
@@ -454,7 +457,7 @@ class TestSuspiciousHeaders:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_suspicious_user_agent(self):
         """Request with suspicious User-Agent may be blocked."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get(
                 "/check_user",
                 params={"user_id": 1},
@@ -470,7 +473,7 @@ class TestSuspiciousHeaders:
     @pytest.mark.asyncio(loop_scope="session")
     async def test_xss_in_headers(self):
         """XSS attack via custom headers."""
-        async with AsyncClient(transport=ASGITransport(app=app, client=("7.214.201.94", 50000)), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app, client=CLIENT), base_url="http://test") as client:
             resp = await client.get(
                 "/check_user",
                 params={"user_id": 1},
