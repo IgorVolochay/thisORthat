@@ -24,7 +24,7 @@ from logger import logger
 
 load_dotenv()
 
-DEV_MODE: bool = os.getenv("DEV_MODE", "true").lower() == "true"
+DEV_MODE: bool = os.getenv("DEV_MODE", "false").lower() == "true"
 TG_BOT_TOKEN: str = os.getenv("TG_BOT_TOKEN", "")
 
 # Maximum allowed age of initData in seconds (1 hour).

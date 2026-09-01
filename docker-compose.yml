@@ -10,6 +10,12 @@ services:
       - "127.0.0.1:${MONGO_PORT}:27017"
     networks:
       - tort-net
+    command: mongod --quiet
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
     healthcheck:
       test: [ "CMD", "mongosh", "--username", "${MONGO_USER}", "--password", "${MONGO_PASS}", "--eval", "db.runCommand({ ping: 1 })" ]
       interval: 10s
@@ -28,6 +34,11 @@ services:
       - "127.0.0.1:15672:15672"
     networks:
       - tort-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
@@ -58,6 +69,11 @@ services:
       MODERATION_SECRET: ${MODERATION_SECRET}
       DEV_MODE: ${DEV_MODE:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     ports:
       - "127.0.0.1:5000:5000"
     networks:
@@ -85,6 +101,11 @@ services:
       RABBIT_USER: ${RABBIT_USER}
       RABBIT_PASS: ${RABBIT_PASS}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "1"
     networks:
       - tort-net
 

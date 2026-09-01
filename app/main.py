@@ -7,6 +7,7 @@ import asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, Response, Header, HTTPException, status
 from guard import SecurityMiddleware, SecurityConfig, SecurityDecorator
+from contextlib import asynccontextmanager
 
 from typing import Optional
 
@@ -17,11 +18,34 @@ from rabbit_worker import RabbitWorker
 from tools.base_moderation import moderate_text
 from logger import logger, setup_logging
 from middleware import RequestLoggingMiddleware
-from tg_auth import get_current_user_id, DEV_MODE
+from tg_auth import get_current_user_id
 
 
 setup_logging()
 load_dotenv()
+
+DEV_MODE: bool = os.getenv("DEV_MODE", "false").lower() == "true"
+mongo_worker = MongoWorker()
+_rabbit_worker: Optional[RabbitWorker] = None
+
+
+def get_rabbit_worker() -> RabbitWorker:
+    global _rabbit_worker
+    if _rabbit_worker is None:
+        _rabbit_worker = RabbitWorker()
+    return _rabbit_worker
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await mongo_worker.create_indexes()
+    if DEV_MODE:
+        logger.warning("⚠️ DEV_MODE is enabled — docs are exposed and Telegram initData auth is DISABLED")
+    logger.info("Application started on :5000")
+    yield
+    mongo_worker.client.close()
+    logger.info("Application shutdown completed.")
+
 
 app: FastAPI = FastAPI(
     title="This OR That",
@@ -31,6 +55,7 @@ app: FastAPI = FastAPI(
     docs_url="/docs" if DEV_MODE else None,
     redoc_url="/redoc" if DEV_MODE else None,
     openapi_url="/openapi.json" if DEV_MODE else None,
+    lifespan=lifespan,
 )
 config = SecurityConfig(
     enable_rate_limiting=True,
@@ -60,15 +85,6 @@ app.add_middleware(SecurityMiddleware, config=config)
 app.add_middleware(RequestLoggingMiddleware)
 app.state.guard_decorator = guard_deco
 app.state._security_middleware = _security_middleware
-mongo_worker = MongoWorker()
-_rabbit_worker: Optional[RabbitWorker] = None
-
-
-def get_rabbit_worker() -> RabbitWorker:
-    global _rabbit_worker
-    if _rabbit_worker is None:
-        _rabbit_worker = RabbitWorker()
-    return _rabbit_worker
 
 MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
 
@@ -82,15 +98,6 @@ async def verify_moderation_secret(
             detail="Invalid moderation secret",
         )
     return x_moderation_secret
-
-
-@app.on_event("startup")
-async def startup_event():
-    await mongo_worker.create_indexes()
-    if DEV_MODE:
-        logger.warning("⚠️ DEV_MODE is enabled — docs are exposed and Telegram initData auth is DISABLED")
-    logger.info("Application started on :5000")
-
 
 @app.get("/check_user", status_code=200)
 async def check_user(
