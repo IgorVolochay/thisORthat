@@ -12,7 +12,9 @@ from logger import logger
 
 
 class RabbitWorker:
+    """Handles RabbitMQ connections and message publishing/consuming for moderation."""
     def __init__(self):
+        """Initializes the RabbitWorker with connection credentials from environment variables."""
         load_dotenv()
         self.url = (
             f"amqp://{os.getenv('RABBIT_USER')}:{os.getenv('RABBIT_PASS')}"
@@ -21,6 +23,7 @@ class RabbitWorker:
         logger.info("RabbitWorker connection established.")
 
     async def send_to_moderation(self, card: Card) -> None:
+        """Publishes a card to the 'moderation' RabbitMQ queue."""
         logger.debug("Preparing to send card {} to moderation queue...", card.card_id)
         connection = await aio_pika.connect_robust(self.url)
         async with connection:
@@ -40,6 +43,12 @@ class RabbitWorker:
         self,
         callback: Callable[[Card], Awaitable[None]],
     ) -> None:
+        """
+        Consumes messages from the 'moderation' queue and processes them using the provided callback.
+        
+        Args:
+            callback: An async function that takes a Card object and processes it.
+        """
         connection = await aio_pika.connect_robust(self.url)
         async with connection:
             channel = await connection.channel()

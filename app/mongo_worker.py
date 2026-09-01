@@ -13,7 +13,9 @@ from logger import logger
 
 
 class MongoWorker:
+    """Worker class for handling all MongoDB database operations."""
     def __init__(self):
+        """Initializes the MongoDB connection and sets up collection references."""
         load_dotenv()
         self.client = motor.motor_asyncio.AsyncIOMotorClient(
             host=os.getenv('MONGO_HOST'),
@@ -46,11 +48,13 @@ class MongoWorker:
 
 
     async def check_user(self, user_id: int) -> bool:
+        """Checks if a user exists in the database by their user_id."""
         document = await self.users_data.find_one({"user_id": user_id}, {"_id": 1})
         return document is not None
 
     async def add_user(
         self, user_id: int, username: str, first_name: str, last_name: str, photo_url: str) -> User:
+        """Creates a new user record in the database."""
         new_user = User(
             user_id=user_id,
             username=username,
@@ -64,6 +68,7 @@ class MongoWorker:
         return new_user
 
     async def get_user(self, user_id: int) -> User:
+        """Retrieves a user's details from the database."""
         document = await self.users_data.find_one({"user_id": user_id})
         return User.model_validate(document)
 
@@ -80,6 +85,7 @@ class MongoWorker:
 
 
     async def get_visited_cards(self, user_id: int) -> BaseResponse:
+        """Retrieves the set of card IDs that a user has already visited."""
         document = await self.visited_data.find_one({"user_id": user_id})
         if not document:
             if await self.check_user(user_id):
@@ -88,6 +94,7 @@ class MongoWorker:
         return BaseResponse(result=Visited.model_validate(document))
 
     async def update_visited_cards(self, user_id: int, visited_card_id: int) -> Visited:
+        """Adds a specific card ID to the user's set of visited cards."""
         updated = await self.visited_data.find_one_and_update(
             {"user_id": user_id},
             {"$addToSet": {"cards_visited": visited_card_id}},
@@ -131,6 +138,7 @@ class MongoWorker:
 
 
     async def get_card(self, card_id: int) -> Optional[Card]:
+        """Retrieves a card's details from the database by its card_id."""
         document = await self.game_data.find_one({"card_id": card_id})
         if document:
             return Card.model_validate(document)
@@ -153,11 +161,13 @@ class MongoWorker:
         return None
 
     def filter_cards(self, random_cards: list[Card], cards_visited: set) -> tuple[list[Card], list[int]]:
+        """Filters a list of random cards to exclude those already visited by the user."""
         filtered_cards = [card for card in random_cards if card.card_id not in cards_visited]
         filtered_cards_id = [card.card_id for card in filtered_cards]
         return filtered_cards, filtered_cards_id
 
     async def add_card_by_api(self, choice_A: str, choice_B: str, author_id: int) -> Card:
+        """Creates a new card in the database with data received from the API."""
         new_card = Card(
             card_id=await self.get_and_update_counter(counter_name="card"),
             choice_A=choice_A,
@@ -170,6 +180,7 @@ class MongoWorker:
         return new_card
 
     async def add_card_by_base_model(self, new_card: Card) -> Optional[Card]:
+        """Inserts a Card model directly into the database."""
         new_card.card_id = await self.get_and_update_counter(counter_name="card")
         try:
             await self.game_data.insert_one(new_card.model_dump())
@@ -204,6 +215,7 @@ class MongoWorker:
         return BaseResponse(result=f"Card {card_id} rejected and deleted")
 
     async def select_choice(self, card_id: int, choice: str) -> BaseResponse:
+        """Increments the vote count for the selected choice (A or B) and total votes on a card."""
         if choice == "A":
             count_field = "count_choice_A"
         elif choice == "B":
@@ -221,6 +233,7 @@ class MongoWorker:
 
 
     async def like_card(self, card_id: int, user_id: int) -> BaseResponse:
+        """Atomically adds a like to a card and records the user's like action."""
         if not await self.check_user(user_id):
             return BaseResponse(result="User doesn't exist", error=True)
 
@@ -256,6 +269,7 @@ class MongoWorker:
         return BaseResponse(result=True, error=False)
 
     async def dislike_card(self, card_id: int, user_id: int) -> BaseResponse:
+        """Atomically adds a dislike to a card and records the user's dislike action."""
         if not await self.check_user(user_id):
             return BaseResponse(result="User doesn't exist", error=True)
 
@@ -289,6 +303,7 @@ class MongoWorker:
 
 
     async def add_comment(self, user_id: int, card_id: int, comment_text: str) -> BaseResponse:
+        """Adds a new comment to a card and links it to the user."""
         if not await self.check_user(user_id):
             return BaseResponse(result="User doesn't exist", error=True)
         if not await self.get_card(card_id):
@@ -315,6 +330,7 @@ class MongoWorker:
         return BaseResponse(result=new_comment)
 
     async def get_comments(self, card_id: int) -> BaseResponse:
+        """Retrieves all comments associated with a specific card_id."""
         if not await self.get_card(card_id):
             return BaseResponse(result="Card doesn't exist", error=True)
         comments = await self.comments_data.find({"card_id": card_id}).sort("creation_date", -1).to_list(length=None)

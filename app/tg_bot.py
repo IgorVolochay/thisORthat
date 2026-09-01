@@ -117,6 +117,7 @@ async def call_moderation_api(action: str, card_id: int) -> dict:
 # ── Callback button handlers ───────────────────────────────
 @dp.callback_query(F.data.startswith("accept:"))
 async def on_accept(callback: CallbackQuery) -> None:
+    """Handles the 'Accept' inline button click for a card."""
     if not callback.data or not isinstance(callback.message, Message):
         return
 
@@ -138,6 +139,7 @@ async def on_accept(callback: CallbackQuery) -> None:
 
 @dp.callback_query(F.data.startswith("reject:"))
 async def on_reject(callback: CallbackQuery) -> None:
+    """Handles the 'Reject' inline button click for a card."""
     if not callback.data or not isinstance(callback.message, Message):
         return
 
@@ -162,6 +164,7 @@ _rabbit_task: asyncio.Task | None = None
 
 @dp.startup()
 async def on_startup() -> None:
+    """Starts the RabbitMQ consumer task when the bot starts."""
     global _rabbit_task
     _rabbit_task = asyncio.create_task(
         rabbit.consume_moderation(send_card_to_admin)
@@ -171,6 +174,7 @@ async def on_startup() -> None:
 
 @dp.shutdown()
 async def on_shutdown() -> None:
+    """Cancels the RabbitMQ consumer task when the bot shuts down."""
     if _rabbit_task:
         _rabbit_task.cancel()
         try:

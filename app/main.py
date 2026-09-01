@@ -30,6 +30,7 @@ _rabbit_worker: Optional[RabbitWorker] = None
 
 
 def get_rabbit_worker() -> RabbitWorker:
+    """Returns a singleton instance of the RabbitWorker."""
     global _rabbit_worker
     if _rabbit_worker is None:
         _rabbit_worker = RabbitWorker()
@@ -38,6 +39,7 @@ def get_rabbit_worker() -> RabbitWorker:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Manages application startup and shutdown events, such as database index creation and cleanup."""
     await mongo_worker.create_indexes()
     if DEV_MODE:
         logger.warning("⚠️ DEV_MODE is enabled — docs are exposed and Telegram initData auth is DISABLED")
@@ -92,6 +94,7 @@ MODERATION_SECRET = os.getenv("MODERATION_SECRET", "change-me-in-production")
 async def verify_moderation_secret(
     x_moderation_secret: str = Header(..., alias="X-Moderation-Secret"),
 ) -> str:
+    """Verifies the moderation secret provided in the request headers."""
     if not secrets.compare_digest(x_moderation_secret, MODERATION_SECRET):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -103,6 +106,7 @@ async def verify_moderation_secret(
 async def check_user(
     user_id: int,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Checks if a user exists in the database by their user_id."""
     result = await mongo.check_user(user_id)
     return BaseResponse(result=result)
 
@@ -111,6 +115,7 @@ async def get_user(
     user_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Retrieves a user's details by their user_id."""
     if await mongo.check_user(user_id):
         result = await mongo.get_user(user_id)
         return BaseResponse(result=result)
@@ -124,6 +129,7 @@ async def add_user(
     response: Response,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Registers a new user in the database if they do not already exist."""
     user_id = auth_user_id if auth_user_id is not None else new_user.user_id
     if user_id is None:
         raise HTTPException(status_code=422, detail="user_id is required")
@@ -145,6 +151,7 @@ async def get_card(
     card_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Retrieves a card's details by its card_id."""
     card = await mongo.get_card(card_id)
     if card:
         return BaseResponse(result=card)
@@ -158,6 +165,7 @@ async def get_random_cards(
     user_id: Optional[int] = None,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Fetches a set of random active cards that the user has not yet visited."""
     resolved_user_id = auth_user_id if auth_user_id is not None else user_id
     if resolved_user_id is None:
         raise HTTPException(status_code=422, detail="user_id is required")
@@ -182,6 +190,7 @@ async def add_card(
     response: Response,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Adds a new card to the database and sends it for moderation."""
     author_id = auth_user_id if auth_user_id is not None else new_card.author_id
     if author_id is None:
         raise HTTPException(status_code=422, detail="author_id is required")
@@ -201,6 +210,7 @@ async def card_accept(
     card_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Accepts a card after moderation, making it active and visible to users."""
     result = await mongo.accept_card(card_id)
     if result.error:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -211,6 +221,7 @@ async def card_reject(
     card_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Rejects a card during moderation and removes it from the database."""
     result = await mongo.reject_card(card_id)
     if result.error:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -222,6 +233,7 @@ async def select_choice(
     response: Response,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Records a user's choice (A or B) for a specific card."""
     user_id = auth_user_id if auth_user_id is not None else choice_data.user_id
     if user_id is None:
         raise HTTPException(status_code=422, detail="user_id is required")
@@ -250,6 +262,7 @@ async def like_card(
     response: Response,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Adds a like to a specific card from a user."""
     user_id = auth_user_id if auth_user_id is not None else like_data.user_id
     if user_id is None:
         raise HTTPException(status_code=422, detail="user_id is required")
@@ -265,6 +278,7 @@ async def dislike_card(
     response: Response,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Adds a dislike to a specific card from a user."""
     user_id = auth_user_id if auth_user_id is not None else dislike_data.user_id
     if user_id is None:
         raise HTTPException(status_code=422, detail="user_id is required")
@@ -281,6 +295,7 @@ async def comment(
     response: Response,
     auth_user_id: Optional[int] = Depends(get_current_user_id),
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Adds a comment to a specific card after passing basic moderation."""
     author_id = auth_user_id if auth_user_id is not None else comment_info.author_id
     if author_id is None:
         raise HTTPException(status_code=422, detail="author_id is required")
@@ -302,6 +317,7 @@ async def get_comments(
     card_id: int,
     response: Response,
     mongo: MongoWorker = Depends(lambda: mongo_worker),) -> BaseResponse:
+    """Retrieves all comments for a specific card."""
     result = await mongo.get_comments(card_id)
     if result.error:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -310,6 +326,7 @@ async def get_comments(
 
 
 async def main():
+    """Starts the Uvicorn web server running the FastAPI application."""
     config = uvicorn.Config("main:app", host="0.0.0.0", port=5000, log_level="warning")
     server = uvicorn.Server(config)
     await server.serve()
