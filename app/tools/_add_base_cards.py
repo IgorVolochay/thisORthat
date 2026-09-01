@@ -41,10 +41,12 @@ def write_json(cards_list, json_file):
     except Exception as e:
         print(f"Error writing to JSON file: {e}")
 
-def add_cards_to_mongodb(cards_list):
+import asyncio
+
+async def add_cards_to_mongodb(cards_list):
     mongo = MongoWorker()
     for card in cards_list:
-        mongo.add_card_by_base_model(card)
+        await mongo.add_card_by_base_model(card)
     print(f"Successfully added {len(cards_list)} cards to MongoDB")
 
 
@@ -60,13 +62,13 @@ if __name__ == "__main__":
     
     if args.action == 0:
         cards = create_cards(args.num, args.user)
-        add_cards_to_mongodb(cards)
+        asyncio.run(add_cards_to_mongodb(cards))
     elif args.action == 1:
         cards = create_cards(args.num, args.user)
         write_json(cards, args.file)
     elif args.action == 2:
         cards = read_json(args.file)
         if cards:
-            add_cards_to_mongodb(cards)
+            asyncio.run(add_cards_to_mongodb(cards))
         else:
             print("No valid cards found in JSON file.")
