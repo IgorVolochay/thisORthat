@@ -1,4 +1,9 @@
 fastapi==0.115.7
-pymongo==4.10.1
+fastapi_guard==7.6.0
+motor==3.7.0
 python-dotenv==1.0.1
 uvicorn==0.34.0
+aio-pika==10.0.1
+aiogram==3.18.0
+aiohttp==3.11.18
+loguru==0.7.3

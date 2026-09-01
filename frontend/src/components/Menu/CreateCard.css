@@ -23,17 +23,24 @@
   margin-bottom: var(--space-md);
 }
 
+.create-rules-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
 .create-rules {
   font-size: 13px;
-  line-height: 1.55;
-  color: var(--color-muted);
-  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+  color: #CBD5E1;
 }
 
 .create-fields {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   margin-bottom: var(--space-lg);
 }
 
@@ -41,7 +48,8 @@
   position: relative;
   border-radius: var(--radius-card);
   padding: var(--space-lg);
-  min-height: 100px;
+  min-height: 110px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .create-field--a {
@@ -65,7 +73,7 @@
 }
 
 .create-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .create-counter {
@@ -74,15 +82,15 @@
   right: var(--space-md);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .create-submit {
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
+  padding: 14px var(--space-lg);
   border-radius: var(--radius-full);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-muted);
   background: var(--glass-bg);
@@ -91,15 +99,17 @@
 }
 
 .create-submit--active {
-  color: var(--color-text);
+  color: #FFFFFF;
   background: linear-gradient(135deg, var(--color-card-a-to), var(--color-card-b-to));
   border-color: transparent;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
 }
 
 .create-submit:disabled {
   cursor: default;
+  opacity: 0.6;
 }
 
 .create-submit--active:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }

@@ -43,6 +43,6 @@ class Comment(BaseModel):
 
     author_id: int
     card_id: int
-    commet_text: str
+    comment_text: str
 
     creation_date: str

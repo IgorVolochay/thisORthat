@@ -1,0 +1,41 @@
+name: Prebuild Workflow
+
+on:
+  pull_request:
+    branches:
+      - prebuild
+
+jobs:
+  test_build:
+    name: Test build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Try to build project
+        run: docker-compose up --build
+
+  deploy_to_test_server:
+    name: Deploy to test server
+    needs: test_build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to test server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TEST_SERVER_ADDRESS }}
+          username: ${{ secrets.TEST_SERVER_USER }}
+          port: ${{ secrets.TEST_SERVER_PORT }}
+          password: ${{ secrets.TEST_SERVER_PASSWORD }}
+          script: |
+            REPO_NAME=$(basename "${{ github.repository }}")
+            if [ ! -d "$REPO_NAME" ]; then
+              git clone https://github.com/${{ github.repository }}.git $REPO_NAME
+            fi
+            cd $REPO_NAME
+
+            git checkout prebuild
+            git pull
+
+            docker-compose down || true
+            docker-compose up -d --build

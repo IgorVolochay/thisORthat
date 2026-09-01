@@ -1,0 +1,150 @@
+.banned-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  padding: var(--space-lg);
+  z-index: 1000;
+  user-select: none;
+}
+
+.banned-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-bg-elevated);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.15);
+  border-radius: var(--radius-card);
+  padding: var(--space-xl) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: bannedAppear 400ms var(--ease-spring);
+}
+
+@keyframes bannedAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.banned-icon-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-lg);
+  color: #EF4444;
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.25);
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(239, 68, 68, 0.45);
+  }
+}
+
+.banned-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.banned-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+  letter-spacing: -0.3px;
+}
+
+.banned-subtitle {
+  font-size: 14px;
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+.banned-info-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: #CBD5E1;
+  text-align: left;
+  margin-bottom: var(--space-xl);
+  width: 100%;
+}
+
+.banned-info-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: #EF4444;
+  flex-shrink: 0;
+}
+
+.banned-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.banned-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 12px var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.banned-btn--primary {
+  background: linear-gradient(135deg, var(--color-card-a-to), var(--color-card-b-to));
+  color: #FFFFFF;
+}
+
+.banned-btn--primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.banned-btn--primary:active {
+  transform: translateY(0);
+}
+
+.banned-btn--secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text);
+}
+
+.banned-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

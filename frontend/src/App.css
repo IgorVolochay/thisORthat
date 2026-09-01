@@ -5,8 +5,10 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-sm) var(--space-md);
-  height: 48px;
+  padding-top: max(var(--space-sm), env(safe-area-inset-top));
+  height: calc(48px + max(0px, env(safe-area-inset-top)));
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .app-logo {
@@ -15,6 +17,7 @@
   font-weight: 700;
   color: var(--color-text);
   letter-spacing: -0.3px;
+  user-select: none;
 }
 
 .app-logo-or {
@@ -25,6 +28,7 @@
   border-radius: 6px;
   font-size: 12px;
   vertical-align: middle;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
 }
 
 /* Hamburger menu */
@@ -41,7 +45,7 @@
 }
 
 .menu-toggle:active {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .menu-toggle-line {

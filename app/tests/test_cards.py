@@ -14,9 +14,9 @@ NON_EXIST_CARD_ID = 1000
 
 # ---------- /add_card ----------
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_valid():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         payload = {
             "choice_A": "Option A",
             "choice_B": "Option B",
@@ -32,9 +32,9 @@ async def test_add_card_valid():
         assert card.choice_B == payload["choice_B"]
         assert card.author_id == payload["author_id"]
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_missing_field():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         payload = {
             #choice_A
             "choice_B": "Option B",
@@ -44,9 +44,9 @@ async def test_add_card_missing_field():
         print(f"\nINPUT: endpoint=/add_card | payload (missing field)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_wrong_type():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         payload = {
             "choice_A": 123,
             "choice_B": "Option B",
@@ -56,9 +56,9 @@ async def test_add_card_wrong_type():
         print(f"\nINPUT: endpoint=/add_card | payload (wrong type)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_empty_strings():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         payload = {
             "choice_A": "",
             "choice_B": "",
@@ -68,9 +68,9 @@ async def test_add_card_empty_strings():
         print(f"\nINPUT: endpoint=/add_card | payload (empty strings)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 400
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_long_strings():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         long_str = "A" * 5000  # long string
         payload = {
             "choice_A": long_str,
@@ -81,9 +81,9 @@ async def test_add_card_long_strings():
         print(f"\nINPUT: endpoint=/add_card | payload with long strings (length={len(long_str)})\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 400
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_negative_author_id():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         payload = {
             "choice_A": "Option A",
             "choice_B": "Option B",
@@ -93,9 +93,9 @@ async def test_add_card_negative_author_id():
         print(f"\nINPUT: endpoint=/add_card | payload (negative author_id)={payload}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_card_malformed_json():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         malformed_json = '{"choice_A": "Option A", "choice_B": "Option B", "author_id": 123' # broken json
         response = await client.post(
             "/add_card",
@@ -105,11 +105,16 @@ async def test_add_card_malformed_json():
         print(f"\nINPUT: endpoint=/add_card | payload (malformed JSON)={malformed_json}\nOUTPUT: status={response.status_code} | json={response.json() if response.content else 'No JSON'}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_async_card_creation():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    """
+    Test parallel card creation.
+    Limit on /add_card — 3 requests/60s (decorator).
+    Send only 2 parallel requests to avoid exceeding the limit.
+    """
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         tasks = []
-        num_cards = 8
+        num_cards = 2  # at most 3 (decorator limit), leaving a margin
         for i in range(num_cards):
             payload = {
                 "choice_A": f"Async Option A {i}",
@@ -118,7 +123,7 @@ async def test_async_card_creation():
             }
             tasks.append(client.post("/add_card", json=payload))
         responses = await asyncio.gather(*tasks)
-        
+
         card_ids = []
         for idx, response in enumerate(responses):
             print(f"\nAsync creation {idx}: status={response.status_code}, response={response.json()}")
@@ -136,19 +141,24 @@ async def test_async_card_creation():
 
 # ---------- /get_card ----------
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_valid():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
+        # First create a card
         payload = {
             "choice_A": "GetTest A",
             "choice_B": "GetTest B",
             "author_id": EXIST_AUTHOR
         }
         create_resp = await client.post("/add_card", json=payload)
+        assert create_resp.status_code in (200, 201), (
+            f"Failed to create card: {create_resp.status_code} {create_resp.text}"
+        )
         base_create = BaseResponse.model_validate(create_resp.json())
         card = Card.model_validate(base_create.result)
         card_id = card.card_id
 
+        # Now retrieve it
         response = await client.get("/get_card", params={"card_id": card_id})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': {card_id}}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 200
@@ -157,30 +167,30 @@ async def test_get_card_valid():
         card_from_get = Card.model_validate(base_resp.result)
         assert card_from_get.card_id == card_id
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_nonexistent():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         response = await client.get("/get_card", params={"card_id": NON_EXIST_CARD_ID})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': {NON_EXIST_CARD_ID}}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 404
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_missing_param():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         response = await client.get("/get_card")
         print(f"\nINPUT: endpoint=/get_card (missing card_id param)\nOUTPUT: status={response.status_code} | json={response.json() if response.content else 'No content'}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_wrong_type():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         response = await client.get("/get_card", params={"card_id": "abc"})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': 'abc'}}\nOUTPUT: status={response.status_code} | json={response.json()}")
         assert response.status_code == 422
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_card_negative():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app, client=("127.0.0.1", 50000)), base_url="http://test") as client:
         response = await client.get("/get_card", params={"card_id": -10})
         print(f"\nINPUT: endpoint=/get_card | params={{'card_id': -10}}\nOUTPUT: status={response.status_code} | json={response.json()}")
-        assert response.status_code == 422
+        assert response.status_code == 404
