@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import LoadingScreen from './components/common/LoadingScreen';
+import BannedScreen from './components/common/BannedScreen';
 import Toast from './components/common/Toast';
 import CardPair from './components/CardPair/CardPair';
 import BottomBar from './components/BottomBar/BottomBar';
@@ -9,7 +10,11 @@ import MenuPanel from './components/Menu/MenuPanel';
 import './App.css';
 
 function AppContent() {
-  const { isLoading, error, openMenu, toast } = useApp();
+  const { isLoading, error, isBanned, handleRetryAfterBan, openMenu, toast } = useApp();
+
+  if (isBanned) {
+    return <BannedScreen onRetry={handleRetryAfterBan} />;
+  }
 
   if (isLoading) {
     return <LoadingScreen />;

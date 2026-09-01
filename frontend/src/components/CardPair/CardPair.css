@@ -11,7 +11,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   position: relative;
   min-height: 0;
 }
@@ -31,52 +31,93 @@
 .card-pair--empty {
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 .empty-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  align-items: center;
   width: 100%;
-  max-width: 320px;
+  max-width: 340px;
+  padding: var(--space-lg);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   animation: hintFadeIn 600ms var(--ease-smooth);
+}
+
+.empty-badge-icon {
+  font-size: 36px;
+  margin-bottom: var(--space-sm);
 }
 
 .card-pair-empty-text {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 19px;
+  font-weight: 700;
   color: var(--color-text);
-  text-align: center;
+  margin-bottom: 6px;
+}
+
+.card-pair-empty-sub {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-muted);
+  margin-bottom: var(--space-lg);
 }
 
 .empty-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  width: 100%;
 }
 
 .empty-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
   width: 100%;
-  padding: var(--space-md);
+  padding: 12px var(--space-md);
   border-radius: var(--radius-sm);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text);
   transition: all var(--duration-fast) var(--ease-smooth);
 }
 
+.empty-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .empty-btn:active {
-  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.98);
+}
+
+.empty-btn--refresh {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(2, 132, 199, 0.2));
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #FFFFFF;
+  font-weight: 600;
 }
 
 .empty-btn--primary {
   background: linear-gradient(135deg, var(--color-card-a-to), var(--color-card-b-to));
   border-color: transparent;
   font-weight: 600;
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
 }
 
-.empty-btn--primary:active {
-  transform: scale(0.97);
+.refresh-icon {
+  transition: transform 0.4s ease;
+}
+
+.refresh-icon--spinning {
+  animation: spin 0.8s linear infinite;
 }
