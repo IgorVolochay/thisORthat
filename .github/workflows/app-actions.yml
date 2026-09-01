@@ -47,6 +47,7 @@ jobs:
       RABBIT_PORT: ${{ secrets.RABBIT_PORT || '5672' }}
       RABBIT_USER: ${{ secrets.RABBIT_USER }}
       RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
+      DEV_MODE: ${{ secrets.DEV_MODE || 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
