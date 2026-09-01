@@ -1,6 +1,6 @@
 /**
  * Auth service — detects Telegram WebApp user or falls back to mock.
- * Auto-registers user on backend if not yet registered.
+ * Provides Telegram Mini App initialization, initData extraction, and Haptic Feedback.
  */
 
 const MOCK_USER = {
@@ -11,7 +11,21 @@ const MOCK_USER = {
   photo_url: '',
 };
 
-function getTelegramUser() {
+/**
+ * Extracts raw Telegram initData query-string for backend HMAC validation.
+ */
+export function getTelegramInitData() {
+  try {
+    return window.Telegram?.WebApp?.initData || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Extracts parsed user info from initDataUnsafe for UI display.
+ */
+export function getTelegramUser() {
   try {
     const tg = window.Telegram?.WebApp;
     const user = tg?.initDataUnsafe?.user;
@@ -33,14 +47,47 @@ function getTelegramUser() {
 export const currentUser = getTelegramUser() ?? MOCK_USER;
 export const isTelegram = !!getTelegramUser();
 
+/**
+ * Initializes Telegram WebApp environment (theme, fullscreen expand, close confirmation).
+ */
 export function initTelegramApp() {
   const tg = window.Telegram?.WebApp;
   if (tg) {
     tg.ready();
     tg.expand();
+    try {
+      tg.setHeaderColor?.('#070711');
+      tg.setBackgroundColor?.('#070711');
+      tg.enableClosingConfirmation?.();
+    } catch {
+      // Ignored in unsupported client versions
+    }
   }
 }
 
+/**
+ * Triggers Telegram Haptic Feedback impact.
+ * @param {'light' | 'medium' | 'heavy' | 'rigid' | 'soft'} style
+ */
+export function hapticImpact(style = 'light') {
+  try {
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(style);
+  } catch {}
+}
+
+/**
+ * Triggers Telegram Haptic Feedback notification.
+ * @param {'error' | 'success' | 'warning'} type
+ */
+export function hapticNotification(type = 'success') {
+  try {
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+  } catch {}
+}
+
+/**
+ * Handles Telegram BackButton lifecycle with cleanup.
+ */
 export function showBackButton(onBack) {
   const tg = window.Telegram?.WebApp;
   if (tg?.BackButton) {
@@ -51,5 +98,18 @@ export function showBackButton(onBack) {
       tg.BackButton.hide();
     };
   }
-  return () => { };
+  return () => {};
+}
+
+/**
+ * Safely opens external link in Telegram WebApp or browser.
+ */
+export function openExternalLink(url) {
+  try {
+    if (window.Telegram?.WebApp?.openLink) {
+      window.Telegram.WebApp.openLink(url);
+      return;
+    }
+  } catch {}
+  window.open(url, '_blank', 'noopener,noreferrer');
 }

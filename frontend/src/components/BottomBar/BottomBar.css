@@ -2,8 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
-  height: var(--bar-height);
+  min-height: var(--bar-height);
   padding: 0 var(--space-lg);
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
   background: var(--color-bg-elevated);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
@@ -13,7 +14,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   transition: color var(--duration-fast) var(--ease-smooth),
@@ -21,18 +22,19 @@
   color: var(--color-muted);
 }
 
-.bar-btn:active {
+.bar-btn:active:not(:disabled) {
   transform: scale(0.92);
 }
 
-.bar-btn--disabled {
-  opacity: 0.4;
-  pointer-events: none;
+.bar-btn:disabled:not(.bar-btn--active) {
+  opacity: 0.35;
+  cursor: default;
 }
 
-.bar-btn--disabled.bar-btn--active {
+.bar-btn--disabled.bar-btn--active,
+.bar-btn:disabled.bar-btn--active {
   opacity: 1;
-  pointer-events: none;
+  cursor: default;
 }
 
 /* Active states */
@@ -47,12 +49,8 @@
 }
 
 .bar-btn--comments {
-  color: var(--color-muted);
-}
-
-.bar-btn--comments:not(.bar-btn--disabled) {
-  opacity: 1;
-  pointer-events: auto;
+  color: var(--color-text);
+  opacity: 0.9;
 }
 
 .bar-icon {
@@ -63,7 +61,7 @@
 .bar-count {
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
 }
 

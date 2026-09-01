@@ -1,22 +1,80 @@
 /**
  * API service — all backend requests for This OR That.
- * All endpoints return { result, error } (BaseResponse).
+ * Includes X-Init-Data header injection, rate limit handling, and IP ban detection.
+ * All endpoints return { result, error, status, isBanned }.
  */
 
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+import { getTelegramInitData } from './auth';
+
+const BASE_URL = process.env.REACT_APP_API_URL || '';
 
 async function request(method, path, body = null) {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  const initData = getTelegramInitData();
+  if (initData) {
+    headers['X-Init-Data'] = initData;
+  }
+
   const options = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
   };
+
   if (body) {
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, options);
-  const data = await response.json();
-  return data;
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, options);
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { result: response.statusText, error: !response.ok };
+    }
+
+    // Check for IP ban by FastAPI-guard / penetration detection
+    const isIpBanned = response.status === 403 && (
+      (typeof data?.detail === 'string' && /banned|ip.*banned|suspicious/i.test(data.detail)) ||
+      (typeof data?.result === 'string' && /banned|ip.*banned|suspicious/i.test(data.result))
+    );
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return {
+          result: data?.detail || 'Слишком много запросов. Подождите несколько секунд.',
+          error: true,
+          status: 429,
+          isBanned: false,
+        };
+      }
+
+      return {
+        result: data?.result || data?.detail || `Ошибка сервера (${response.status})`,
+        error: true,
+        status: response.status,
+        isBanned: isIpBanned,
+      };
+    }
+
+    return {
+      result: data?.result !== undefined ? data.result : data,
+      error: data?.error || false,
+      status: response.status,
+      isBanned: false,
+    };
+  } catch (err) {
+    console.error(`API request error [${method} ${path}]:`, err);
+    return {
+      result: 'Ошибка соединения с сервером',
+      error: true,
+      status: 0,
+      isBanned: false,
+    };
+  }
 }
 
 const GET = (path) => request('GET', path);
@@ -58,9 +116,6 @@ export const api = {
   addComment: (authorId, cardId, commentText) =>
     POST('/comment', { author_id: authorId, card_id: cardId, comment_text: commentText }),
 
-  // TODO: GET /get_comments — endpoint not yet implemented on backend
-  getComments: (cardId) => {
-    console.warn('GET /get_comments not implemented on backend yet');
-    return Promise.resolve({ result: [], error: false });
-  },
+  getComments: (cardId) =>
+    GET(`/get_comments?card_id=${cardId}`),
 };

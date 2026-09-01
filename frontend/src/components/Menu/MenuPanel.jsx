@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { showBackButton } from '../../services/auth';
+import { showBackButton, hapticImpact, openExternalLink } from '../../services/auth';
 import Overlay from '../common/Overlay';
 import AboutPage from './AboutPage';
 import CreateCard from './CreateCard';
@@ -12,16 +12,32 @@ export default function MenuPanel() {
   // Telegram BackButton for sub-screens
   useEffect(() => {
     if (isMenuOpen && menuScreen !== 'menu') {
-      const cleanup = showBackButton(() => setMenuScreen('menu'));
+      const cleanup = showBackButton(() => {
+        hapticImpact('light');
+        setMenuScreen('menu');
+      });
       return cleanup;
     }
     if (isMenuOpen && menuScreen === 'menu') {
-      const cleanup = showBackButton(() => closeMenu());
+      const cleanup = showBackButton(() => {
+        hapticImpact('light');
+        closeMenu();
+      });
       return cleanup;
     }
   }, [isMenuOpen, menuScreen, setMenuScreen, closeMenu]);
 
   if (!isMenuOpen) return null;
+
+  const handleNavigate = (screen) => {
+    hapticImpact('light');
+    setMenuScreen(screen);
+  };
+
+  const handleExternalLink = (url) => {
+    hapticImpact('light');
+    openExternalLink(url);
+  };
 
   // Sub-screens
   if (menuScreen === 'about') {
@@ -29,7 +45,7 @@ export default function MenuPanel() {
       <>
         <Overlay visible={true} onClick={closeMenu} />
         <div className="menu-panel menu-panel--open">
-          <AboutPage onBack={() => setMenuScreen('menu')} />
+          <AboutPage onBack={() => handleNavigate('menu')} />
         </div>
       </>
     );
@@ -40,7 +56,7 @@ export default function MenuPanel() {
       <>
         <Overlay visible={true} onClick={closeMenu} />
         <div className="menu-panel menu-panel--open">
-          <CreateCard onBack={() => setMenuScreen('menu')} />
+          <CreateCard onBack={() => handleNavigate('menu')} />
         </div>
       </>
     );
@@ -51,7 +67,7 @@ export default function MenuPanel() {
       <Overlay visible={true} onClick={closeMenu} />
       <div className="menu-panel menu-panel--open">
         <nav className="menu-list">
-          <button className="menu-item" onClick={() => setMenuScreen('about')}>
+          <button className="menu-item" onClick={() => handleNavigate('about')}>
             <span className="menu-icon">
               <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
                 <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -61,7 +77,7 @@ export default function MenuPanel() {
             <span className="menu-label">О проекте</span>
           </button>
 
-          <button className="menu-item" onClick={() => setMenuScreen('create')}>
+          <button className="menu-item" onClick={() => handleNavigate('create')}>
             <span className="menu-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="22" height="22">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -73,7 +89,7 @@ export default function MenuPanel() {
 
           <button
             className="menu-item"
-            onClick={() => window.open('https://boosty.to/pseudodev/donate', '_blank')}
+            onClick={() => handleExternalLink('https://boosty.to/pseudodev/donate')}
           >
             <span className="menu-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="22" height="22">
