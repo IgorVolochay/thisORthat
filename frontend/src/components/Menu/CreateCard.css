@@ -1,0 +1,105 @@
+.create-card {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.create-back {
+  font-size: 14px;
+  color: var(--color-muted);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-xs) 0;
+  transition: color var(--duration-fast) var(--ease-smooth);
+}
+
+.create-back:hover {
+  color: var(--color-text);
+}
+
+.create-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: var(--space-md);
+}
+
+.create-rules {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.create-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-lg);
+}
+
+.create-field {
+  position: relative;
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+  min-height: 100px;
+}
+
+.create-field--a {
+  background: linear-gradient(160deg, var(--color-card-a-from), var(--color-card-a-to));
+}
+
+.create-field--b {
+  background: linear-gradient(160deg, var(--color-card-b-from), var(--color-card-b-to));
+}
+
+.create-textarea {
+  width: 100%;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  resize: none;
+  line-height: 1.4;
+}
+
+.create-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.create-counter {
+  position: absolute;
+  bottom: var(--space-sm);
+  right: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.create-submit {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-full);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-muted);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.create-submit--active {
+  color: var(--color-text);
+  background: linear-gradient(135deg, var(--color-card-a-to), var(--color-card-b-to));
+  border-color: transparent;
+}
+
+.create-submit:disabled {
+  cursor: default;
+}
+
+.create-submit--active:active {
+  transform: scale(0.97);
+}
