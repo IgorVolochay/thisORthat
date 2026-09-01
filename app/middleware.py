@@ -38,10 +38,17 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         duration_ms = round((time.perf_counter() - start) * 1000, 1)
         status = response.status_code
 
+        client_ip = request.headers.get("X-Forwarded-For")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        else:
+            client_ip = request.headers.get("X-Real-IP") or (request.client.host if request.client else "unknown")
+
         base_fields = {
             "method": request.method,
             "path": request.url.path,
             "query": str(request.query_params) or None,
+            "client_ip": client_ip,
             "status": status,
             "duration_ms": duration_ms,
         }
