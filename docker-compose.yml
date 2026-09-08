@@ -67,6 +67,7 @@ services:
       RABBIT_USER: ${RABBIT_USER}
       RABBIT_PASS: ${RABBIT_PASS}
       MODERATION_SECRET: ${MODERATION_SECRET}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
       DEV_MODE: ${DEV_MODE:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     logging:
@@ -92,10 +93,10 @@ services:
       backend:
         condition: service_started
     environment:
-      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
       TG_ADMIN_CHAT_ID: ${TG_ADMIN_CHAT_ID}
       API_BASE_URL: http://backend:5000
       MODERATION_SECRET: ${MODERATION_SECRET}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
       RABBIT_HOST: rabbitmq
       RABBIT_PORT: "5672"
       RABBIT_USER: ${RABBIT_USER}

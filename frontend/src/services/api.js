@@ -6,7 +6,7 @@
 
 import { getTelegramInitData } from './auth';
 
-const BASE_URL = process.env.REACT_APP_API_URL || '';
+const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 async function request(method, path, body = null) {
   const headers = {

@@ -61,14 +61,14 @@ app: FastAPI = FastAPI(
 )
 config = SecurityConfig(
     enable_rate_limiting=True,
-    rate_limit=10, # TODO: check rate limits in real usage
-    rate_limit_window=3, # TODO: check rate limits in real usage
+    rate_limit=10,
+    rate_limit_window=3,
     enable_redis=False,
     enable_ip_banning=True,
 
     enable_penetration_detection=True,
     auto_ban_threshold=3, 
-    auto_ban_duration=3600, 
+    auto_ban_duration=600,
 
     detection_compiler_timeout=2.0, 
     detection_max_content_length=10000, 
