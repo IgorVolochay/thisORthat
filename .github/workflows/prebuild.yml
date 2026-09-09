@@ -5,6 +5,9 @@ on:
     branches:
       - prebuild
 
+permissions:
+  contents: read
+
 jobs:
   test_build:
     name: Test build
