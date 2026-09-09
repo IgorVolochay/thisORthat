@@ -9,6 +9,9 @@ on:
     branches:
       - prebuild
 
+permissions:
+  contents: read
+
 jobs:
   frontend-test-build:
     name: Frontend (Test & Build)
