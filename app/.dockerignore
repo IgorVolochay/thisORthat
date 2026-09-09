@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+.env
+tests/
+security.log
+.git/
+.github/
+*.md
+dockerfile.app
+dockerfile.bot
+.dockerignore
+

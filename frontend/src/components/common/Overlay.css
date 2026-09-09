@@ -1,0 +1,16 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-normal) var(--ease-smooth);
+}
+
+.overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
